@@ -1,0 +1,25 @@
+{
+  "name": "atlassi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
+    "install:all": "npm install && npm install --prefix client && npm install --prefix server",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ELHanafi007/atlassi.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ELHanafi007/atlassi/issues"
+  },
+  "homepage": "https://github.com/ELHanafi007/atlassi#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

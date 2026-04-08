@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  phone     String?
+  role      Role      @default(BUYER)
+  listings  Listing[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Listing {
+  id          Int      @id @default(autoincrement())
+  title       String   // Title in Darija
+  description String   // Description in Darija
+  price       Float
+  priceLabel  String?  // e.g., "درهم / شهر" or "درهم"
+  type        ListingType // SALE, RENT
+  category    Category    // VILLA, APARTMENT, RIAD, LAND
+  location    String   // Neighborhood
+  city        String   // Casablanca, Marrakech, etc.
+  images      String[] // Array of image URLs
+  bedrooms    Int?
+  bathrooms   Int?
+  surface     Float?
+  isFeatured  Boolean  @default(false)
+  seller      User     @relation(fields: [sellerId], references: [id])
+  sellerId    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum ListingType {
+  SALE
+  RENT
+}
+
+enum Category {
+  VILLA
+  APARTMENT
+  RIAD
+  LAND
+}
