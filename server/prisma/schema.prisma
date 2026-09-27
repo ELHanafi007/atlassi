@@ -1,62 +1,199 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  name      String
-  email     String    @unique
-  password  String
-  phone     String?
-  role      Role      @default(BUYER)
-  listings  Listing[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id                  Int               @id @default(autoincrement())
+  name                String
+  email               String            @unique
+  password            String
+  phone               String?           @unique
+  phoneVerifiedAt     DateTime?
+  role                Role              @default(USER)
+  listings            Listing[]
+  offers              Offer[]
+  requests            PropertyRequest[]
+  favorites           Favorite[]
+  sentContacts        ContactRequest[]  @relation("ContactSender")
+  receivedContacts    ContactRequest[]  @relation("ContactRecipient")
+  sessions            Session[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 }
 
 model Listing {
-  id          Int      @id @default(autoincrement())
-  title       String   // Title in Darija
-  description String   // Description in Darija
-  price       Float
-  priceLabel  String?  // e.g., "درهم / شهر" or "درهم"
-  type        ListingType // SALE, RENT
-  category    Category    // VILLA, APARTMENT, RIAD, LAND
-  location    String   // Neighborhood
-  city        String   // Casablanca, Marrakech, etc.
-  images      String[] // Array of image URLs
-  bedrooms    Int?
-  bathrooms   Int?
-  surface     Float?
-  isFeatured  Boolean  @default(false)
-  seller      User     @relation(fields: [sellerId], references: [id])
-  sellerId    Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            Int            @id @default(autoincrement())
+  title         String
+  description   String
+  price         Float
+  priceLabel    String?
+  purpose       ListingPurpose
+  type          PropertyType
+  status        ListingStatus  @default(DRAFT)
+  location      String
+  city          String
+  neighborhood  String?
+  images        ListingImage[]
+  bedrooms      Int?
+  bathrooms     Int?
+  livingRooms   Int?
+  kitchens      Int?
+  floors        Int?
+  propertyFloor Int?
+  surface       Float?
+  condition     String?
+  furnished     Boolean        @default(false)
+  amenities     String[]
+  isFeatured    Boolean        @default(false)
+  seller        User           @relation(fields: [sellerId], references: [id])
+  sellerId      Int
+  offers        Offer[]
+  requests     PropertyRequest[]
+  favorites    Favorite[]
+  contacts     ContactRequest[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([purpose, status])
+  @@index([city, type])
+  @@index([price])
+}
+
+model ListingImage {
+  id        Int      @id @default(autoincrement())
+  url       String
+  sortOrder Int      @default(0)
+  isPrimary Boolean  @default(false)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId Int
+  createdAt DateTime @default(now())
+
+  @@index([listingId, sortOrder])
+}
+
+model Session {
+  id        String   @id
+  tokenHash String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+model Offer {
+  id           Int         @id @default(autoincrement())
+  amount       Float
+  message      String?
+  conditions   String?
+  contactPreference String?
+  status       OfferStatus @default(PENDING)
+  buyer        User        @relation(fields: [buyerId], references: [id])
+  buyerId      Int
+  listing      Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId    Int
+  ownerResponse String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([buyerId, status])
+  @@index([listingId, status])
+}
+
+model PropertyRequest {
+  id              Int             @id @default(autoincrement())
+  purpose         ListingPurpose
+  type            PropertyType?
+  city            String
+  neighborhood    String?
+  maxBudget       Float?
+  minBedrooms     Int?
+  minBathrooms    Int?
+  minSurface      Float?
+  amenities       String[]
+  description     String
+  status          RequestStatus   @default(ACTIVE)
+  requester       User            @relation(fields: [requesterId], references: [id])
+  requesterId     Int
+  listing         Listing?        @relation(fields: [listingId], references: [id])
+  listingId       Int?
+  contacts        ContactRequest[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([city, purpose, status])
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+}
+
+model ContactRequest {
+  id          Int           @id @default(autoincrement())
+  message     String
+  sender      User          @relation("ContactSender", fields: [senderId], references: [id])
+  senderId    Int
+  recipient   User          @relation("ContactRecipient", fields: [recipientId], references: [id])
+  recipientId Int
+  listing     Listing?      @relation(fields: [listingId], references: [id])
+  listingId   Int?
+  request     PropertyRequest? @relation(fields: [requestId], references: [id])
+  requestId   Int?
+  status      ContactStatus @default(UNREAD)
+  createdAt   DateTime      @default(now())
 }
 
 enum Role {
-  BUYER
-  SELLER
+  USER
   ADMIN
 }
-
-enum ListingType {
+enum ListingPurpose {
   SALE
   RENT
 }
-
-enum Category {
-  VILLA
+enum ListingStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  SOLD
+  RENTED
+}
+enum PropertyType {
   APARTMENT
-  RIAD
+  HOUSE
+  VILLA
+  STUDIO
   LAND
+  OFFICE
+  COMMERCIAL
+  RIAD
+  OTHER
+}
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+enum RequestStatus {
+  ACTIVE
+  MATCHED
+  CLOSED
+}
+enum ContactStatus {
+  UNREAD
+  READ
+  ARCHIVED
 }
