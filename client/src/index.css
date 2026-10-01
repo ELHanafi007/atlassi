@@ -1,7 +1,67 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap');
+@import "tailwindcss";
 
-:root { font-family: 'DM Sans', system-ui, sans-serif; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
-html { scroll-behavior: smooth; }
-body { margin: 0; min-width: 320px; }
-button, input, select { font-family: inherit; }
-::selection { background: #d8aa8f; color: #17211f; }
+:root {
+  /* Editorial Moroccan Luxury Color Ramp */
+  --canvas: #f9f8f5;
+  --surface: #f0ede6;
+  --raised-surface: #ffffff;
+  --hairline: #e7e2d8;
+  --border: #ded7cb;
+
+  /* Typography Ramp */
+  --ink: #19221f;
+  --ink-muted: #55605b;
+  --ink-subtle: #7d8882;
+
+  /* Chrome Accent */
+  --accent: #bd6b46;
+  --accent-hover: #a65d3c;
+  --accent-tint: #f5ece6;
+
+  /* Fonts */
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Newsreader', Georgia, serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background-color: var(--canvas);
+  color: var(--ink);
+}
+
+/* Custom selection */
+::selection {
+  background: #e2c1b1;
+  color: #19221f;
+}
+
+/* Tabular figures for pricing and specs */
+.font-mono, strong[class*="font-mono"], .price-tag {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Serif class */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

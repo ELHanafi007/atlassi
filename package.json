@@ -3,10 +3,17 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
-    "build": "npm install --prefix client && npm run build --prefix client",
+    "build": "npm run build --prefix client && npx prisma generate --schema=server/prisma/schema.prisma",
+    "postinstall": "npx prisma generate --schema=server/prisma/schema.prisma",
     "install:all": "npm install && npm install --prefix client && npm install --prefix server",
+    "start": "node server/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -22,5 +29,14 @@
   "homepage": "https://github.com/ELHanafi007/atlassi#readme",
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "@prisma/client": "7.7.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "prisma": "7.7.0"
   }
 }

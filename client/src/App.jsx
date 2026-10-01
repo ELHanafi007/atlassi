@@ -1,38 +1,568 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowUpRight, Bath, BedDouble, Building2, ChevronDown, Heart, Home, Menu, Search, SlidersHorizontal, Sparkles, X, Maximize2 } from 'lucide-react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { 
+  Sparkles, ArrowUpRight, Plus, Compass, 
+  Building2, ShieldCheck, Heart, Search, HelpCircle, 
+  SlidersHorizontal, MessageSquarePlus 
+} from 'lucide-react';
 import './App.css';
-import { api } from './lib/api';
 
-const properties = [
-  { id: 1, title: 'Light-filled apartment by the bay', type: 'Apartment', purpose: 'Rent', price: 12000, city: 'Tangier', area: 'Malabata', bedrooms: 3, bathrooms: 2, surface: 145, image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=85&w=1200', tag: 'New listing', description: 'A calm, generously proportioned home with a sea-facing balcony, bright interiors and everything you need for effortless city living.', amenities: ['Balcony', 'Parking', 'Furnished'], owner: 'Atlassi verified owner' },
-  { id: 2, title: 'Contemporary villa in the Palmeraie', type: 'Villa', purpose: 'Sale', price: 4850000, city: 'Marrakech', area: 'Palmeraie', bedrooms: 4, bathrooms: 3, surface: 390, image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&q=85&w=1200', tag: 'Featured', description: 'A modern interpretation of a Moroccan retreat, with generous outdoor space, a private pool and views toward the Atlas.', amenities: ['Pool', 'Garden', 'Parking'], owner: 'Atlassi verified owner' },
-  { id: 3, title: 'Architect-designed home in Anfa', type: 'House', purpose: 'Sale', price: 6200000, city: 'Casablanca', area: 'Anfa', bedrooms: 4, bathrooms: 3, surface: 310, image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=85&w=1200', tag: 'Editor’s pick', description: 'A composed family residence shaped around light, privacy and indoor-outdoor living in one of Casablanca’s most sought-after neighbourhoods.', amenities: ['Garden', 'Terrace', 'Fireplace'], owner: 'Atlassi verified owner' },
-  { id: 4, title: 'A quiet riad in the Medina', type: 'Riad', purpose: 'Sale', price: 2900000, city: 'Fes', area: 'Medina', bedrooms: 5, bathrooms: 4, surface: 280, image: 'https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&q=85&w=1200', tag: 'Rare find', description: 'A restored riad with original zellige, a leafy courtyard and the rare feeling of having your own piece of the old city.', amenities: ['Courtyard', 'Terrace', 'Furnished'], owner: 'Atlassi verified owner' },
-  { id: 5, title: 'Sunlit studio near Hassan Tower', type: 'Studio', purpose: 'Rent', price: 6500, city: 'Rabat', area: 'Hassan', bedrooms: 1, bathrooms: 1, surface: 48, image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&q=85&w=1200', tag: 'Move-in ready', description: 'A refined, practical studio in the heart of Rabat, close to the tram, cafés and the city’s cultural landmarks.', amenities: ['Furnished', 'Elevator'], owner: 'Atlassi verified owner' },
-  { id: 6, title: 'Ocean-view apartment in Agadir', type: 'Apartment', purpose: 'Rent', price: 9000, city: 'Agadir', area: 'Founty', bedrooms: 2, bathrooms: 2, surface: 110, image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=85&w=1200', tag: 'Sea view', description: 'An easy coastal base with a wide terrace, clean lines and a view that makes every evening feel like a holiday.', amenities: ['Sea view', 'Pool', 'Parking'], owner: 'Atlassi verified owner' },
-];
-const formatPrice = (value, purpose) => `${new Intl.NumberFormat('en-US').format(value)} MAD${purpose === 'Rent' ? ' / month' : ''}`;
+import { auth, listingsApi, requestsApi } from './lib/api';
+import { Navbar } from './components/Navbar';
+import { Hero } from './components/Hero';
+import { FilterBar } from './components/FilterBar';
+import { PropertyCard } from './components/PropertyCard';
+import { PropertyDetailModal } from './components/PropertyDetailModal';
+import { OfferModal } from './components/OfferModal';
+import { CreateListingModal } from './components/CreateListingModal';
+import { CreateRequestModal } from './components/CreateRequestModal';
+import { AuthModal } from './components/AuthModal';
+import { Toast } from './components/Toast';
 
-function Logo() { return <div className="logo"><span>atlassi</span><i /></div>; }
-function PropertyCard({ property, onOpen, saved, onSave }) { return <article className="property-card" onClick={() => onOpen(property)}><div className="card-image-wrap"><img src={property.image} alt={property.title} /><span className="card-tag">{property.tag}</span><button className={`favorite ${saved ? 'is-saved' : ''}`} aria-label="Save property" onClick={(event) => { event.stopPropagation(); onSave(property.id); }}><Heart size={18} fill={saved ? 'currentColor' : 'none'} /></button></div><div className="card-content"><div className="card-heading"><div><span className="eyebrow">{property.purpose} · {property.type}</span><h3>{property.title}</h3></div><ArrowUpRight size={20} /></div><p className="location">{property.area}, {property.city}</p><div className="property-stats"><span><BedDouble size={16} /> {property.bedrooms} bed</span><span><Bath size={16} /> {property.bathrooms} bath</span><span><Maximize2 size={15} /> {property.surface} m²</span></div><div className="card-footer"><strong>{formatPrice(property.price, property.purpose)}</strong><span>View property</span></div></div></article>; }
-function DetailPanel({ property, onClose, onSave, saved, onOffer }) { return <div className="overlay" role="dialog" aria-modal="true" onClick={onClose}><section className="detail-panel" onClick={(event) => event.stopPropagation()}><button className="close-button" onClick={onClose} aria-label="Close"><X size={20} /></button><div className="detail-hero"><img src={property.image} alt={property.title} /><div className="detail-hero-copy"><span className="eyebrow">{property.purpose} · {property.type}</span><h2>{property.title}</h2><p>{property.area}, {property.city}</p></div></div><div className="detail-body"><div className="detail-main"><div className="price-row"><strong>{formatPrice(property.price, property.purpose)}</strong><button className={`text-action ${saved ? 'is-saved' : ''}`} onClick={() => onSave(property.id)}><Heart size={17} fill={saved ? 'currentColor' : 'none'} /> {saved ? 'Saved' : 'Save'}</button></div><div className="large-stats"><span><BedDouble /> <b>{property.bedrooms}</b> bedrooms</span><span><Bath /> <b>{property.bathrooms}</b> bathrooms</span><span><Maximize2 /> <b>{property.surface} m²</b></span></div><p className="detail-description">{property.description}</p><h3>What this home offers</h3><div className="amenities">{property.amenities.map((item) => <span key={item}>{item}</span>)}</div></div><aside className="contact-card"><span className="verified-dot"><Sparkles size={15} /> Verified listing</span><h3>Ready to make it yours?</h3><p>Ask a question, schedule a visit or make an offer directly to the owner.</p><button className="primary-button">{property.purpose === 'Rent' ? 'Request a visit' : 'Start a conversation'}</button><button className="secondary-button" onClick={() => onOffer(property)}>Make an offer</button><small>{property.owner}</small></aside></div></section></div>; }
+export function App() {
+  // State: Authentication
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
-function OfferModal({ property, onClose }) { const [amount, setAmount] = useState(''); const [message, setMessage] = useState(''); const [state, setState] = useState('idle'); const submit = async (event) => { event.preventDefault(); setState('loading'); try { await api(`/listings/${property.id}/offers`, { method: 'POST', body: JSON.stringify({ amount: Number(amount), message }) }); setState('success'); } catch (error) { setState(error.message); } }; return <div className="overlay" role="dialog" aria-modal="true" onClick={onClose}><form className="offer-modal" onSubmit={submit} onClick={(event) => event.stopPropagation()}><button type="button" className="close-button" onClick={onClose}><X size={20} /></button><span className="eyebrow">Make an offer</span><h2>{property.title}</h2><p className="offer-price">Listed at {formatPrice(property.price, property.purpose)}</p>{state === 'success' ? <div className="success-message"><Sparkles size={25} /><h3>Offer sent.</h3><p>The owner will be able to review your offer from their dashboard.</p><button type="button" className="primary-button" onClick={onClose}>Done</button></div> : <><label>Your offer amount<input required type="number" min="1" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="e.g. 8500" /></label><label>Message <textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Tell the owner a little about your interest..." /></label>{state !== 'idle' && state !== 'loading' && <p className="form-error">{state}</p>}<button className="primary-button" disabled={state === 'loading'}>{state === 'loading' ? 'Sending…' : 'Submit offer'} <ArrowUpRight size={17} /></button></>}</form></div>; }
+  // State: Data
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [requests, setRequests] = useState([]);
 
-function LoginPage({ onBack }) {
-  const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [state, setState] = useState('idle');
-  const submit = async (event) => { event.preventDefault(); setState('loading'); try { const result = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }); localStorage.setItem('atlassi-token', result.data.token); setState('success'); } catch (error) { setState(error.message); } };
-  return <div className="login-page"><div className="login-art"><button className="back-link light" onClick={onBack}>← Back to search</button><div><Logo /><h1>Make your next<br /><em>move feel right.</em></h1><p>Save homes, make offers and tell owners what you’re looking for.</p></div><span className="login-art-footer">Atlassi · Homes with a point of view</span></div><div className="login-form-wrap"><button className="back-link" onClick={onBack}>← Back</button><form className="login-form" onSubmit={submit}><span className="eyebrow">Welcome back</span><h2>Sign in to Atlassi</h2><p>Continue your search and connect with owners across Morocco.</p><label>Email<input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" /></label><label>Password<input type="password" required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" /></label>{state !== 'idle' && state !== 'loading' && state !== 'success' && <div className="form-error">{state}</div>}{state === 'success' && <div className="login-success">You’re signed in. You can now post your request.</div>}<button className="primary-button login-submit" disabled={state === 'loading'}>{state === 'loading' ? 'Signing in…' : 'Sign in'} <ArrowUpRight size={17} /></button><p className="login-helper">New to Atlassi? <button type="button" onClick={() => setState('Registration is coming next. Your search is still saved.')}>Create an account</button></p></form></div></div>;
+  // State: Favorites
+  const [savedIds, setSavedIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('atlassi-saved-ids') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
+  // State: Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [purpose, setPurpose] = useState('ALL'); // 'ALL' | 'SALE' | 'RENT'
+  const [city, setCity] = useState('');
+  const [propertyType, setPropertyType] = useState('');
+  const [sort, setSort] = useState('newest');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minBedrooms, setMinBedrooms] = useState('');
+
+  // State: Modals & Overlays
+  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [offerProperty, setOfferProperty] = useState(null);
+  const [showCreateListingModal, setShowCreateListingModal] = useState(false);
+  const [showCreateRequestModal, setShowCreateRequestModal] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const showToast = useCallback((toastData) => {
+    setToast(toastData);
+    setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  }, []);
+
+  // Save favorites to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('atlassi-saved-ids', JSON.stringify(savedIds));
+    } catch {
+      // storage unavailable
+    }
+  }, [savedIds]);
+
+  // Load Current User on Mount
+  useEffect(() => {
+    const token = localStorage.getItem('atlassi-token');
+    if (token) {
+      auth.me()
+        .then((res) => {
+          if (res?.data?.user) {
+            setCurrentUser(res.data.user);
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('atlassi-token');
+          setCurrentUser(null);
+        });
+    }
+  }, []);
+
+  // Fetch Listings from backend API
+  const fetchListings = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = {};
+      if (purpose !== 'ALL') params.purpose = purpose;
+      if (city) params.city = city;
+      if (propertyType) params.type = propertyType;
+      if (sort) params.sort = sort;
+      if (minPrice) params.minPrice = minPrice;
+      if (maxPrice) params.maxPrice = maxPrice;
+      if (minBedrooms) params.minBedrooms = minBedrooms;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+
+      const res = await listingsApi.getAll(params);
+      setListings(res.data || []);
+    } catch (err) {
+      console.error('Failed to load listings:', err);
+      setError('Unable to load listings. The server may be restarting.');
+    } finally {
+      setLoading(false);
+    }
+  }, [purpose, city, propertyType, sort, minPrice, maxPrice, minBedrooms, searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchListings();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [fetchListings]);
+
+  // Fetch Requests
+  useEffect(() => {
+    requestsApi.getAll()
+      .then((res) => {
+        if (res?.data) setRequests(res.data);
+      })
+      .catch((err) => console.warn('Could not load requests:', err.message));
+  }, []);
+
+  // Toggle Favorite
+  const handleToggleSave = (id) => {
+    setSavedIds((prev) => {
+      const exists = prev.includes(id);
+      const next = exists ? prev.filter((item) => item !== id) : [...prev, id];
+      showToast({
+        type: exists ? 'info' : 'success',
+        message: exists ? 'Removed from saved homes.' : 'Saved to your collection.'
+      });
+      return next;
+    });
+  };
+
+  // Filtered Listings View (Accounts for favorites toggle)
+  const displayedListings = useMemo(() => {
+    if (showFavoritesOnly) {
+      return listings.filter((l) => savedIds.includes(l.id));
+    }
+    return listings;
+  }, [listings, showFavoritesOnly, savedIds]);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setPurpose('ALL');
+    setCity('');
+    setPropertyType('');
+    setSort('newest');
+    setMinPrice('');
+    setMaxPrice('');
+    setMinBedrooms('');
+    setShowFavoritesOnly(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await auth.logout();
+    } catch {
+      // ignore
+    }
+    localStorage.removeItem('atlassi-token');
+    setCurrentUser(null);
+    showToast({ type: 'info', message: 'Signed out successfully.' });
+  };
+
+  const handleListingCreated = (newListing) => {
+    setListings((prev) => [newListing, ...prev]);
+    setSelectedProperty(newListing);
+  };
+
+  const handleRequestCreated = (newRequest) => {
+    setRequests((prev) => [newRequest, ...prev]);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f9f8f5] text-[#19221f] flex flex-col font-sans selection:bg-[#e2c1b1]">
+      
+      {/* Toast Notification */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
+      {/* Navigation Header */}
+      <Navbar
+        currentUser={currentUser}
+        savedCount={savedIds.length}
+        onOpenAuth={() => setShowAuthModal(true)}
+        onOpenCreateListing={() => {
+          if (!currentUser) setShowAuthModal(true);
+          else setShowCreateListingModal(true);
+        }}
+        onLogout={handleLogout}
+        onFilterByPurpose={(p) => {
+          setPurpose(p);
+          setShowFavoritesOnly(false);
+        }}
+        onShowFavoritesOnly={() => setShowFavoritesOnly(!showFavoritesOnly)}
+        isFavoritesFilterActive={showFavoritesOnly}
+      />
+
+      <main id="top" className="flex-1">
+        
+        {/* Editorial Hero Section */}
+        <Hero
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          selectedCity={city}
+          onSelectCity={(selected) => {
+            setCity(selected);
+            setShowFavoritesOnly(false);
+          }}
+          onFeaturedClick={() => {
+            const featured = listings.find((l) => l.isFeatured) || listings[0];
+            if (featured) setSelectedProperty(featured);
+          }}
+        />
+
+        {/* Interactive Filter Toolbar */}
+        <FilterBar
+          purpose={purpose}
+          setPurpose={(p) => {
+            setPurpose(p);
+            setShowFavoritesOnly(false);
+          }}
+          city={city}
+          setCity={(c) => {
+            setCity(c);
+            setShowFavoritesOnly(false);
+          }}
+          propertyType={propertyType}
+          setPropertyType={setPropertyType}
+          sort={sort}
+          setSort={setSort}
+          minPrice={minPrice}
+          setMinPrice={setMinPrice}
+          maxPrice={maxPrice}
+          setMaxPrice={setMaxPrice}
+          minBedrooms={minBedrooms}
+          setMinBedrooms={setMinBedrooms}
+          onReset={handleResetFilters}
+        />
+
+        {/* Discovery & Listings Collection */}
+        <section id="discover" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+          
+          {/* Section Heading & Counter */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#bd6b46] mb-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>
+                  {showFavoritesOnly ? 'Your Saved Collection' : 'The Atlassi Portfolio'}
+                </span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#19221f]">
+                {showFavoritesOnly
+                  ? 'Saved Moroccan Homes'
+                  : city
+                  ? `Homes in ${city}`
+                  : 'Considered Moroccan Architecture'}
+              </h2>
+            </div>
+
+            <div className="text-xs text-stone-500 font-medium">
+              Showing <strong className="font-mono text-stone-900">{displayedListings.length}</strong> {displayedListings.length === 1 ? 'property' : 'properties'}
+              {showFavoritesOnly && (
+                <button
+                  onClick={() => setShowFavoritesOnly(false)}
+                  className="ml-3 text-[#bd6b46] hover:underline font-semibold"
+                >
+                  View all
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Loading Skeleton */}
+          {loading && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-white rounded-2xl border border-[#ded7cb] p-3 animate-pulse">
+                  <div className="aspect-[4/3] bg-stone-200 rounded-xl mb-4" />
+                  <div className="h-4 bg-stone-200 rounded w-1/3 mb-2" />
+                  <div className="h-5 bg-stone-200 rounded w-3/4 mb-3" />
+                  <div className="h-3 bg-stone-200 rounded w-full mb-4" />
+                  <div className="h-8 bg-stone-200 rounded-lg w-full" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Error Message */}
+          {!loading && error && (
+            <div className="p-8 text-center bg-rose-50 border border-rose-200 rounded-2xl max-w-xl mx-auto">
+              <p className="text-sm text-rose-800 mb-4">{error}</p>
+              <button
+                onClick={fetchListings}
+                className="px-5 py-2.5 bg-[#1b2622] text-white text-xs font-semibold rounded-xl hover:bg-stone-800 transition-all"
+              >
+                Try reloading
+              </button>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && !error && displayedListings.length === 0 && (
+            <div className="text-center py-16 px-4 bg-white rounded-3xl border border-[#ded7cb] max-w-xl mx-auto shadow-morocco">
+              <div className="w-12 h-12 rounded-full bg-[#f5ece6] text-[#bd6b46] flex items-center justify-center mx-auto mb-4">
+                <HelpCircle className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-serif font-bold text-[#1b2622] mb-2">
+                No matching residences found
+              </h3>
+              <p className="text-xs sm:text-sm text-stone-500 max-w-sm mx-auto mb-6 leading-relaxed">
+                We couldn’t find any homes matching your exact filters. Adjust your search criteria or post a custom property request.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={handleResetFilters}
+                  className="px-5 py-2.5 rounded-xl border border-[#ded7cb] text-xs font-semibold text-stone-700 hover:bg-stone-100 transition-colors"
+                >
+                  Clear all filters
+                </button>
+                <button
+                  onClick={() => setShowCreateRequestModal(true)}
+                  className="px-5 py-2.5 rounded-xl bg-[#1b2622] text-white text-xs font-semibold hover:bg-stone-800 flex items-center gap-1.5 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5 text-[#bd6b46]" />
+                  Broadcast property request
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Properties Grid */}
+          {!loading && !error && displayedListings.length > 0 && (
+            <motion.div 
+              layout
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
+            >
+              <AnimatePresence>
+                {displayedListings.map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                    onOpen={(item) => setSelectedProperty(item)}
+                    isSaved={savedIds.includes(property.id)}
+                    onToggleSave={handleToggleSave}
+                  />
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
+
+        </section>
+
+        {/* Client Requests & Broadcast Section */}
+        <section id="requests" className="bg-[#ede8df] border-t border-[#ded7cb] py-16 lg:py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center mb-10">
+              <div className="lg:col-span-8">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#ded7cb] text-[#bd6b46] text-xs font-semibold uppercase tracking-wider mb-3">
+                  <MessageSquarePlus className="w-3.5 h-3.5" />
+                  <span>Direct Buyer & Tenant Requests</span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#19221f] leading-tight">
+                  Can’t find what you need?<br />
+                  <span className="italic font-normal text-[#bd6b46]">Let owners come to you.</span>
+                </h2>
+                <p className="text-xs sm:text-sm text-stone-600 mt-2 max-w-xl leading-relaxed">
+                  Post your exact specifications (budget, preferred city, style). Verified Moroccan property owners and developers review active briefs daily.
+                </p>
+              </div>
+
+              <div className="lg:col-span-4 flex justify-start lg:justify-end">
+                <button
+                  onClick={() => {
+                    if (!currentUser) setShowAuthModal(true);
+                    else setShowCreateRequestModal(true);
+                  }}
+                  className="px-6 py-3.5 rounded-full bg-[#1b2622] hover:bg-[#283631] text-white text-xs font-bold tracking-wider uppercase flex items-center gap-2 transition-all shadow-md active:scale-98"
+                >
+                  <Plus className="w-4 h-4 text-[#bd6b46]" />
+                  <span>Broadcast a request</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Live Requests Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {requests.slice(0, 3).map((req) => (
+                <div
+                  key={req.id}
+                  className="bg-white p-5 rounded-2xl border border-[#ded7cb] shadow-2xs flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between text-[11px] text-stone-400 font-semibold uppercase tracking-wider mb-2">
+                      <span className="text-[#bd6b46]">
+                        {req.purpose === 'SALE' ? 'Looking to Buy' : 'Looking to Rent'} · {req.type || 'Property'}
+                      </span>
+                      <span>{req.city}</span>
+                    </div>
+                    <p className="text-xs text-stone-700 font-medium leading-relaxed mb-3">
+                      “{req.description}”
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-[11px]">
+                    <span className="text-stone-500 font-mono">
+                      Max budget: {req.maxBudget ? `${new Intl.NumberFormat('en-US').format(req.maxBudget)} MAD` : 'Flexible'}
+                    </span>
+                    <span className="font-semibold text-[#1b2622]">Active Brief</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Editorial Philosophy Section */}
+        <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-[#e7e2d8]">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#bd6b46] block mb-2">
+              Our Perspective
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-serif font-bold text-[#19221f] leading-tight">
+              A curated standard for<br />
+              <span className="italic font-normal text-[#bd6b46]">Moroccan living.</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-stone-700">
+            <div className="p-6 rounded-2xl bg-white border border-[#ded7cb] shadow-2xs flex flex-col justify-between">
+              <div>
+                <span className="font-serif text-3xl font-bold text-[#bd6b46] block mb-4">01</span>
+                <h3 className="text-lg font-bold text-[#19221f] mb-2">Verified Provenance</h3>
+                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+                  Every listed riad, villa, and modern sea apartment has verified ownership or direct mandate. No duplicate or ghost listings.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white border border-[#ded7cb] shadow-2xs flex flex-col justify-between">
+              <div>
+                <span className="font-serif text-3xl font-bold text-[#bd6b46] block mb-4">02</span>
+                <h3 className="text-lg font-bold text-[#19221f] mb-2">Architectural Respect</h3>
+                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+                  We celebrate Moroccan artisanal heritage—from hand-chiseled Fez zellige to lime tadelakt plaster and Atlas cedar wood.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white border border-[#ded7cb] shadow-2xs flex flex-col justify-between">
+              <div>
+                <span className="font-serif text-3xl font-bold text-[#bd6b46] block mb-4">03</span>
+                <h3 className="text-lg font-bold text-[#19221f] mb-2">Direct Negotiation</h3>
+                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+                  Direct message property owners, propose structured offers, and arrange private visits with complete transparency.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-[#1b2622] text-[#e8eee5] py-12 border-t border-stone-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-serif font-bold text-white tracking-tight">atlassi</span>
+            <span className="w-2 h-2 rounded-full bg-[#bd6b46]" />
+            <span className="text-xs text-stone-400 ml-4">
+              © {new Date().getFullYear()} Atlassi Real Estate · Morocco
+            </span>
+          </div>
+
+          <div className="flex items-center gap-6 text-xs text-stone-300">
+            <button onClick={() => { setCity('Marrakech'); setPurpose('ALL'); }} className="hover:text-white transition-colors">Marrakech</button>
+            <button onClick={() => { setCity('Tangier'); setPurpose('ALL'); }} className="hover:text-white transition-colors">Tangier</button>
+            <button onClick={() => { setCity('Casablanca'); setPurpose('ALL'); }} className="hover:text-white transition-colors">Casablanca</button>
+            <button onClick={() => { setCity('Fes'); setPurpose('ALL'); }} className="hover:text-white transition-colors">Fes</button>
+            <a href="#top" className="text-[#bd6b46] hover:underline font-semibold flex items-center gap-1">
+              Top <ArrowUpRight className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        </div>
+      </footer>
+
+      {/* MODALS */}
+      <AnimatePresence>
+        {selectedProperty && (
+          <PropertyDetailModal
+            property={selectedProperty}
+            onClose={() => setSelectedProperty(null)}
+            isSaved={savedIds.includes(selectedProperty.id)}
+            onToggleSave={handleToggleSave}
+            onOpenOffer={(prop) => {
+              setSelectedProperty(null);
+              setOfferProperty(prop);
+            }}
+            currentUser={currentUser}
+            onShowToast={showToast}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {offerProperty && (
+          <OfferModal
+            property={offerProperty}
+            onClose={() => setOfferProperty(null)}
+            currentUser={currentUser}
+            onShowToast={showToast}
+            onOpenAuth={() => setShowAuthModal(true)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCreateListingModal && (
+          <CreateListingModal
+            onClose={() => setShowCreateListingModal(false)}
+            currentUser={currentUser}
+            onListingCreated={handleListingCreated}
+            onShowToast={showToast}
+            onOpenAuth={() => setShowAuthModal(true)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCreateRequestModal && (
+          <CreateRequestModal
+            onClose={() => setShowCreateRequestModal(false)}
+            currentUser={currentUser}
+            onRequestCreated={handleRequestCreated}
+            onShowToast={showToast}
+            onOpenAuth={() => setShowAuthModal(true)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAuthModal && (
+          <AuthModal
+            onClose={() => setShowAuthModal(false)}
+            onAuthSuccess={(user) => setCurrentUser(user)}
+            onShowToast={showToast}
+          />
+        )}
+      </AnimatePresence>
+
+    </div>
+  );
 }
 
-function App() {
-  const [activeTab, setActiveTab] = useState('Buy'); const [query, setQuery] = useState(''); const [city, setCity] = useState(''); const [type, setType] = useState(''); const [showFilters, setShowFilters] = useState(false); const [selected, setSelected] = useState(null); const [offerProperty, setOfferProperty] = useState(null); const [showLogin, setShowLogin] = useState(false); const [saved, setSaved] = useState(() => JSON.parse(localStorage.getItem('atlassi-favorites') || '[]')); const [menuOpen, setMenuOpen] = useState(false);
-  useEffect(() => localStorage.setItem('atlassi-favorites', JSON.stringify(saved)), [saved]);
-  const filtered = useMemo(() => properties.filter((property) => { const matchesTab = activeTab === 'Buy' ? property.purpose === 'Sale' : activeTab === 'Rent' ? property.purpose === 'Rent' : true; const search = `${property.title} ${property.city} ${property.area} ${property.type}`.toLowerCase(); return matchesTab && (!query || search.includes(query.toLowerCase())) && (!city || property.city === city) && (!type || property.type === type); }), [activeTab, city, query, type]);
-  const toggleSave = (id) => setSaved((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]); const scrollToListings = () => document.getElementById('discover')?.scrollIntoView({ behavior: 'smooth' });
-  return <div className="app-shell"><header className="site-header"><div className="nav-inner"><a href="#top" aria-label="Atlassi home"><Logo /></a><nav className={menuOpen ? 'open' : ''}><a href="#discover">Buy</a><a href="#discover">Rent</a><a href="#requests">Requests</a><a href="#about">About Atlassi</a></nav><div className="header-actions"><button className="post-link" onClick={() => setShowLogin(true)}>Post a property <ArrowUpRight size={16} /></button><button className="account-button" onClick={() => setShowLogin(true)}>Log in</button><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label="Open menu">{menuOpen ? <X /> : <Menu />}</button></div></div></header>
-  <main id="top"><section className="hero"><div className="hero-orb" /><div className="hero-copy"><span className="kicker"><span /> A new way to find home in Morocco</span><h1>Find a place<br /><em>that feels like you.</em></h1><p>Discover considered homes across Morocco — from a city apartment to a villa by the sea.</p><div className="hero-search"><div className="search-field"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && scrollToListings()} placeholder="Search by city, neighbourhood or property" /></div><button onClick={scrollToListings}>Search homes <ArrowUpRight size={18} /></button></div><div className="hero-trust"><span><Sparkles size={16} /> Curated listings</span><span><Building2 size={16} /> Morocco-wide</span><span><Home size={16} /> Built for real life</span></div></div><div className="hero-image"><img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=85&w=1600" alt="Moroccan villa with pool" /><div className="hero-image-caption"><span>Featured home</span><strong>Dar Atlas · Marrakech</strong><small>View collection <ArrowUpRight size={14} /></small></div></div></section>
-  <section className="discover-section" id="discover"><div className="section-intro"><div><span className="eyebrow">The Atlassi collection</span><h2>Find your next<br /><em>chapter.</em></h2></div><p>Thoughtfully selected homes, from the everyday to the extraordinary. Search at your pace, then connect with the people behind each place.</p></div><div className="search-toolbar"><div className="tabs">{['Buy', 'Rent', 'All homes'].map((tab) => <button key={tab} className={activeTab === tab ? 'active' : ''} onClick={() => setActiveTab(tab)}>{tab}</button>)}</div><div className="toolbar-controls"><select value={city} onChange={(event) => setCity(event.target.value)} aria-label="Filter by city"><option value="">All cities</option>{[...new Set(properties.map((item) => item.city))].map((item) => <option key={item}>{item}</option>)}</select><select value={type} onChange={(event) => setType(event.target.value)} aria-label="Filter by property type"><option value="">All types</option>{[...new Set(properties.map((item) => item.type))].map((item) => <option key={item}>{item}</option>)}</select><button className={`filter-button ${showFilters ? 'active' : ''}`} onClick={() => setShowFilters(!showFilters)}><SlidersHorizontal size={17} /> Filters <ChevronDown size={15} /></button></div></div>{showFilters && <div className="filter-drawer"><span>Use city, type, purpose and search to narrow your view.</span><button onClick={() => { setCity(''); setType(''); setQuery(''); }}>Clear all</button></div>}<div className="results-meta"><span><strong>{filtered.length}</strong> homes to explore</span><span>Curated for Morocco <Sparkles size={15} /></span></div>{filtered.length ? <div className="property-grid">{filtered.map((property) => <PropertyCard key={property.id} property={property} onOpen={setSelected} saved={saved.includes(property.id)} onSave={toggleSave} />)}</div> : <div className="empty-state"><Sparkles size={26} /><h3>Nothing matches just yet.</h3><p>Try a different search, or tell owners what kind of home you’re looking for.</p><button className="primary-button" onClick={() => document.getElementById('requests')?.scrollIntoView({ behavior: 'smooth' })}>Post a property request <ArrowUpRight size={17} /></button></div>}</section>
-  <section className="request-banner" id="requests"><div className="request-mark">?</div><div><span className="eyebrow">Looking for something specific?</span><h2>Nothing matches?<br /><em>Tell us what you need.</em></h2><p>Post a request and let property owners across Morocco come to you.</p></div><button className="light-button" onClick={() => setShowLogin(true)}>Post a request <ArrowUpRight size={17} /></button></section><section className="values-section" id="about"><span className="eyebrow">A more human marketplace</span><h2>Less scrolling.<br /><em>More belonging.</em></h2><div className="values-grid"><div><strong>01</strong><h3>Homes with a point of view</h3><p>We favour places with character, context and a story worth stepping into.</p></div><div><strong>02</strong><h3>Local by design</h3><p>From Tangier to Agadir, Atlassi is grounded in the cities and communities we serve.</p></div><div><strong>03</strong><h3>Clarity at every step</h3><p>See the details that matter, connect with confidence and move at your own pace.</p></div></div></section></main><footer><Logo /><span>© 2026 Atlassi · Made for finding home in Morocco</span><a href="#top">Back to top <ArrowUpRight size={15} /></a></footer>{selected && <DetailPanel property={selected} onClose={() => setSelected(null)} onSave={toggleSave} onOffer={setOfferProperty} saved={saved.includes(selected.id)} />}{offerProperty && <OfferModal property={offerProperty} onClose={() => setOfferProperty(null)} />}{showLogin && <LoginPage onBack={() => setShowLogin(false)} />}</div>;
-}
 export default App;

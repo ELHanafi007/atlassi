@@ -1,12 +1,30 @@
 node_modules/
-.env
-.DS_Store
-dist/
-build/
-.prisma/
-generated/
 client/node_modules/
 server/node_modules/
+
+# Environment files
+.env
+.env*.local
+*.env
+!.env.example
+client/.env
+server/.env
+
+# Build outputs
+dist/
+build/
 client/dist/
 server/dist/
+.vercel/
+
+# Prisma & Database artifacts
+.prisma/
+generated/
+
+# Local data store (fallback JSON — never commit)
+data/
+server/data/
+
+# OS and Logs
+.DS_Store
 *.log
