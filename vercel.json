@@ -8,7 +8,7 @@
     "server": {
       "root": "server",
       "framework": "express",
-      "buildCommand": "npx prisma generate --schema=prisma/schema.prisma"
+      "buildCommand": "prisma generate --schema=prisma/schema.prisma"
     }
   },
   "rewrites": [
