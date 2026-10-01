@@ -28,3 +28,4 @@ server/data/
 # OS and Logs
 .DS_Store
 *.log
+.neon

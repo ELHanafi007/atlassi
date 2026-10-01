@@ -4,10 +4,10 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import crypto from 'node:crypto';
-import pkg from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { PrismaNeon } from '@prisma/adapter-neon';
 import { store, verifyPassword } from './dataStore.js';
 
-const { PrismaClient } = pkg;
 dotenv.config();
 
 const app = express();
@@ -17,7 +17,8 @@ let prisma = null;
 
 if (hasDatabase) {
   try {
-    prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
+    const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
+    prisma = new PrismaClient({ adapter });
   } catch (err) {
     console.warn('Prisma initialization failed, falling back to persistent dataStore:', err.message);
   }
