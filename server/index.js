@@ -760,8 +760,6 @@ app.use((error, _req, res, _next) => {
 
 export default app;
 
-if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`Atlassi API running on port ${PORT} (${hasDatabase && prisma ? 'database' : 'persistent store'} mode)`);
-  });
-}
+app.listen(PORT, () => {
+  console.log(`Atlassi API running on port ${PORT} (${hasDatabase && prisma ? 'database' : 'persistent store'} mode)`);
+});
