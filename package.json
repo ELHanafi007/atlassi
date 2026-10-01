@@ -10,8 +10,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
-    "build": "npm run build --prefix client && prisma generate --schema=server/prisma/schema.prisma",
-    "postinstall": "prisma generate --schema=server/prisma/schema.prisma",
+    "build": "npm run build --prefix client",
     "install:all": "npm install && npm install --prefix client && npm install --prefix server",
     "start": "node server/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
