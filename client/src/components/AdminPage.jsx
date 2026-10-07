@@ -579,8 +579,8 @@ function AdminLogin({ onLogin }) {
         return;
       }
       onLogin(j.data.token, j.data.user);
-    } catch {
-      setError('Impossible de joindre le serveur.');
+    } catch (err) {
+      setError(err.message || 'Impossible de joindre le serveur.');
       setLoading(false);
     }
   };
