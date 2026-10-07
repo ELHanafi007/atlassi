@@ -15,12 +15,18 @@ const PORT = process.env.PORT || 5000;
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 let prisma = null;
 
-if (hasDatabase) {
+async function getPrisma() {
+  if (!hasDatabase) return null;
+  if (prisma) return prisma;
   try {
+    const { PrismaClient } = await import('@prisma/client');
+    const { PrismaNeon } = await import('@prisma/adapter-neon');
     const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
     prisma = new PrismaClient({ adapter });
+    return prisma;
   } catch (err) {
-    console.warn('Prisma initialization failed, falling back to persistent dataStore:', err.message);
+    console.warn('Prisma initialization skipped:', err.message);
+    return null;
   }
 }
 
@@ -83,12 +89,13 @@ const publicUser = (user) => ({
 });
 
 const createSession = async (user) => {
-  if (hasDatabase && prisma) {
+  const db = await getPrisma();
+  if (db) {
     try {
       const rawToken = crypto.randomBytes(32).toString('hex');
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
       const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-      await prisma.session.create({
+      await db.session.create({
         data: { id: crypto.randomUUID(), tokenHash, userId: user.id, expiresAt }
       });
       return rawToken;
@@ -106,13 +113,18 @@ const authUser = async (req) => {
   const rawToken = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!rawToken) return null;
 
-  if (hasDatabase && prisma) {
-    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const session = await prisma.session.findUnique({
-      where: { tokenHash },
-      include: { user: true }
-    });
-    return session && session.expiresAt > new Date() ? session.user : null;
+  const db = await getPrisma();
+  if (db) {
+    try {
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const session = await db.session.findUnique({
+        where: { tokenHash },
+        include: { user: true }
+      });
+      return session && session.expiresAt > new Date() ? session.user : null;
+    } catch {
+      return store.findUserByToken(rawToken);
+    }
   }
   return store.findUserByToken(rawToken);
 };
@@ -205,10 +217,11 @@ app.post('/api/auth/login', async (req, res, next) => {
 
     let user = null;
     let passwordValid = false;
+    const db = await getPrisma();
 
-    if (hasDatabase && prisma) {
+    if (db) {
       try {
-        user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+        user = await db.user.findUnique({ where: { email: normalizedEmail } });
         if (user) {
           const [salt, storedHash] = user.password.split(':');
           const computedHash = crypto.scryptSync(password, salt, 64).toString('hex');
