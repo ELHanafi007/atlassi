@@ -571,10 +571,13 @@ function AdminLogin({ onLogin }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      const j = await r.json().catch(async () => {
+      let j;
+      try {
+        j = await r.clone().json();
+      } catch {
         const text = await r.text().catch(() => '');
-        return { error: text || 'Erreur serveur (réponse non-JSON).' };
-      });
+        j = { error: text || `Erreur serveur (HTTP ${r.status})` };
+      }
       if (!r.ok) { setError(j.error || 'Identifiants incorrects.'); setLoading(false); return; }
       if (j.data?.user?.role !== 'ADMIN') {
         setError('Accès réservé aux administrateurs Atlassi.');
