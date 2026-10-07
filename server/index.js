@@ -162,13 +162,14 @@ app.post('/api/auth/register', async (req, res, next) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    if (hasDatabase && prisma) {
-      const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    const db = await getPrisma();
+    if (db) {
+      const existing = await db.user.findUnique({ where: { email: normalizedEmail } });
       if (existing) return res.status(409).json({ error: 'An account with this email already exists.' });
 
       const salt = crypto.randomBytes(16).toString('hex');
       const hash = crypto.scryptSync(password, salt, 64).toString('hex');
-      const user = await prisma.user.create({
+      const user = await db.user.create({
         data: {
           name: name.trim(),
           email: normalizedEmail,
@@ -254,8 +255,9 @@ app.post('/api/auth/login', async (req, res, next) => {
 });
 
 app.get('/api/auth/me', requireAuth, async (req, res) => {
-  const favorites = hasDatabase && prisma
-    ? await prisma.favorite.findMany({ where: { userId: req.user.id } })
+  const db = await getPrisma();
+  const favorites = db
+    ? await db.favorite.findMany({ where: { userId: req.user.id } })
     : store.getUserFavorites(req.user.id);
 
   return res.json({
@@ -269,9 +271,10 @@ app.get('/api/auth/me', requireAuth, async (req, res) => {
 app.post('/api/auth/logout', requireAuth, async (req, res, next) => {
   try {
     const rawToken = req.headers.authorization.replace(/^Bearer\s+/i, '').trim();
-    if (hasDatabase && prisma) {
+    const db = await getPrisma();
+    if (db) {
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-      await prisma.session.deleteMany({ where: { tokenHash } });
+      await db.session.deleteMany({ where: { tokenHash } });
     } else {
       store.deleteSession(rawToken);
     }
@@ -298,8 +301,9 @@ app.post('/api/auth/verify-phone', requireAuth, async (req, res, next) => {
 
     const verifiedAt = new Date();
     let updatedUser;
-    if (hasDatabase && prisma) {
-      updatedUser = await prisma.user.update({
+    const db = await getPrisma();
+    if (db) {
+      updatedUser = await db.user.update({
         where: { id: req.user.id },
         data: { phoneVerifiedAt: verifiedAt }
       });
@@ -320,7 +324,8 @@ app.post('/api/auth/verify-phone', requireAuth, async (req, res, next) => {
 // LISTINGS
 app.get('/api/listings', async (req, res, next) => {
   try {
-    if (hasDatabase && prisma) {
+    const db = await getPrisma();
+    if (db) {
       const { purpose, city, type, minPrice, maxPrice, search, sort } = req.query;
       const where = {
         status: 'PUBLISHED',
@@ -349,7 +354,7 @@ app.get('/api/listings', async (req, res, next) => {
         sort === 'surfaceDesc' ? { surface: 'desc' } :
         { createdAt: 'desc' };
 
-      const listings = await prisma.listing.findMany({
+      const listings = await db.listing.findMany({
         where,
         include: {
           images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
@@ -370,8 +375,9 @@ app.get('/api/listings', async (req, res, next) => {
 app.get('/api/listings/:id', async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    if (hasDatabase && prisma) {
-      const listing = await prisma.listing.findFirst({
+    const db = await getPrisma();
+    if (db) {
+      const listing = await db.listing.findFirst({
         where: { id, status: 'PUBLISHED' },
         include: {
           images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
@@ -417,8 +423,9 @@ app.post('/api/listings', requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'Title, description, price, purpose, type, and city are required.' });
     }
 
-    if (hasDatabase && prisma) {
-      const listing = await prisma.listing.create({
+    const db = await getPrisma();
+    if (db) {
+      const listing = await db.listing.create({
         data: {
           title: title.trim(),
           description: description.trim(),
@@ -463,8 +470,9 @@ app.post('/api/listings', requireAuth, async (req, res, next) => {
 
 app.get('/api/me/listings', requireAuth, async (req, res, next) => {
   try {
-    if (hasDatabase && prisma) {
-      const listings = await prisma.listing.findMany({
+    const db = await getPrisma();
+    if (db) {
+      const listings = await db.listing.findMany({
         where: { sellerId: req.user.id },
         include: {
           images: { orderBy: { sortOrder: 'asc' } },
@@ -486,12 +494,13 @@ app.patch('/api/listings/:id/status', requireAuth, async (req, res, next) => {
     const { status } = req.body;
     if (!status) return res.status(400).json({ error: 'Status is required.' });
 
-    if (hasDatabase && prisma) {
-      const listing = await prisma.listing.findFirst({
+    const db = await getPrisma();
+    if (db) {
+      const listing = await db.listing.findFirst({
         where: { id: Number(req.params.id), sellerId: req.user.id }
       });
       if (!listing) return res.status(404).json({ error: 'Listing not found or unauthorized.' });
-      const updated = await prisma.listing.update({
+      const updated = await db.listing.update({
         where: { id: listing.id },
         data: { status }
       });
@@ -515,14 +524,15 @@ app.post('/api/listings/:id/offers', requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'Please enter a valid offer amount.' });
     }
 
-    if (hasDatabase && prisma) {
-      const listing = await prisma.listing.findFirst({
+    const db = await getPrisma();
+    if (db) {
+      const listing = await db.listing.findFirst({
         where: { id: Number(req.params.id), status: 'PUBLISHED' }
       });
       if (!listing || listing.sellerId === req.user.id) {
         return res.status(400).json({ error: 'Listing is not eligible for your offer.' });
       }
-      const offer = await prisma.offer.create({
+      const offer = await db.offer.create({
         data: {
           listingId: listing.id,
           buyerId: req.user.id,
@@ -557,8 +567,9 @@ app.post('/api/listings/:id/offers', requireAuth, async (req, res, next) => {
 
 app.get('/api/me/offers', requireAuth, async (req, res, next) => {
   try {
-    if (hasDatabase && prisma) {
-      const offers = await prisma.offer.findMany({
+    const db = await getPrisma();
+    if (db) {
+      const offers = await db.offer.findMany({
         where: { buyerId: req.user.id },
         include: {
           listing: {
@@ -578,8 +589,9 @@ app.get('/api/me/offers', requireAuth, async (req, res, next) => {
 
 app.get('/api/me/received-offers', requireAuth, async (req, res, next) => {
   try {
-    if (hasDatabase && prisma) {
-      const offers = await prisma.offer.findMany({
+    const db = await getPrisma();
+    if (db) {
+      const offers = await db.offer.findMany({
         where: { listing: { sellerId: req.user.id } },
         include: {
           buyer: { select: { id: true, name: true, email: true, phone: true } },
@@ -601,12 +613,13 @@ app.patch('/api/offers/:id/status', requireAuth, async (req, res, next) => {
     const { status, ownerResponse } = req.body || {};
     if (!status) return res.status(400).json({ error: 'Status is required.' });
 
-    if (hasDatabase && prisma) {
-      const offer = await prisma.offer.findFirst({
+    const db = await getPrisma();
+    if (db) {
+      const offer = await db.offer.findFirst({
         where: { id: Number(req.params.id), listing: { sellerId: req.user.id } }
       });
       if (!offer) return res.status(404).json({ error: 'Offer not found or unauthorized.' });
-      const updated = await prisma.offer.update({
+      const updated = await db.offer.update({
         where: { id: offer.id },
         data: { status, ownerResponse }
       });
@@ -625,8 +638,9 @@ app.patch('/api/offers/:id/status', requireAuth, async (req, res, next) => {
 app.post('/api/favorites/:listingId', requireAuth, async (req, res, next) => {
   try {
     const listingId = Number(req.params.listingId);
-    if (hasDatabase && prisma) {
-      await prisma.favorite.upsert({
+    const db = await getPrisma();
+    if (db) {
+      await db.favorite.upsert({
         where: { userId_listingId: { userId: req.user.id, listingId } },
         create: { userId: req.user.id, listingId },
         update: {}
@@ -643,8 +657,9 @@ app.post('/api/favorites/:listingId', requireAuth, async (req, res, next) => {
 app.delete('/api/favorites/:listingId', requireAuth, async (req, res, next) => {
   try {
     const listingId = Number(req.params.listingId);
-    if (hasDatabase && prisma) {
-      await prisma.favorite.deleteMany({
+    const db = await getPrisma();
+    if (db) {
+      await db.favorite.deleteMany({
         where: { userId: req.user.id, listingId }
       });
       return res.json({ data: { listingId, saved: false } });
@@ -658,8 +673,9 @@ app.delete('/api/favorites/:listingId', requireAuth, async (req, res, next) => {
 
 app.get('/api/me/favorites', requireAuth, async (req, res, next) => {
   try {
-    if (hasDatabase && prisma) {
-      const favorites = await prisma.favorite.findMany({
+    const db = await getPrisma();
+    if (db) {
+      const favorites = await db.favorite.findMany({
         where: { userId: req.user.id },
         include: {
           listing: {
@@ -685,8 +701,9 @@ app.post('/api/requests', requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'Purpose, city, and description are required.' });
     }
 
-    if (hasDatabase && prisma) {
-      const request = await prisma.propertyRequest.create({
+    const db = await getPrisma();
+    if (db) {
+      const request = await db.propertyRequest.create({
         data: {
           purpose: purpose.toUpperCase(),
           type: req.body.type ? req.body.type.toUpperCase() : null,
@@ -713,8 +730,9 @@ app.post('/api/requests', requireAuth, async (req, res, next) => {
 
 app.get('/api/requests', async (req, res, next) => {
   try {
-    if (hasDatabase && prisma) {
-      const requests = await prisma.propertyRequest.findMany({
+    const db = await getPrisma();
+    if (db) {
+      const requests = await db.propertyRequest.findMany({
         where: {
           status: 'ACTIVE',
           ...(req.query.city && { city: { contains: req.query.city, mode: 'insensitive' } }),
@@ -744,11 +762,12 @@ app.post('/api/listings/:id/inquire', requireAuth, async (req, res, next) => {
     }
 
     const listingId = Number(req.params.id);
-    if (hasDatabase && prisma) {
-      const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+    const db = await getPrisma();
+    if (db) {
+      const listing = await db.listing.findUnique({ where: { id: listingId } });
       if (!listing) return res.status(404).json({ error: 'Listing not found' });
 
-      const contact = await prisma.contactRequest.create({
+      const contact = await db.contactRequest.create({
         data: {
           senderId: req.user.id,
           recipientId: listing.sellerId,
@@ -789,6 +808,30 @@ const requireAdmin = async (req, res, next) => {
 
 app.get('/api/admin/stats', requireAdmin, async (_req, res, next) => {
   try {
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const [totalListings, publishedListings, pendingListings,
+               totalRequests, activeRequests,
+               totalOffers, pendingOffers,
+               totalContacts, unreadContacts,
+               totalUsers] = await Promise.all([
+          db.listing.count(),
+          db.listing.count({ where: { status: 'PUBLISHED' } }),
+          db.listing.count({ where: { status: 'DRAFT' } }),
+          db.propertyRequest.count(),
+          db.propertyRequest.count({ where: { status: 'ACTIVE' } }),
+          db.offer.count(),
+          db.offer.count({ where: { status: 'PENDING' } }),
+          db.contactRequest.count(),
+          db.contactRequest.count({ where: { status: 'UNREAD' } }),
+          db.user.count({ where: { role: { not: 'ADMIN' } } })
+        ]);
+        return res.json({ data: { totalListings, publishedListings, pendingListings, totalRequests, activeRequests, totalOffers, pendingOffers, totalContacts, unreadContacts, totalUsers } });
+      } catch (dbErr) {
+        console.warn('Admin stats Prisma error, falling back to store:', dbErr.message);
+      }
+    }
     const stats = store.getAdminStats();
     return res.json({ data: stats });
   } catch (error) { return next(error); }
@@ -796,6 +839,30 @@ app.get('/api/admin/stats', requireAdmin, async (_req, res, next) => {
 
 app.get('/api/admin/listings', requireAdmin, async (_req, res, next) => {
   try {
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const listings = await db.listing.findMany({
+          include: {
+            images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
+            seller: { select: { id: true, name: true, email: true, phone: true, phoneVerifiedAt: true } },
+            _count: { select: { offers: true } }
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+        const data = listings.map(l => {
+          const inquiriesCount = 0; // contactRequest doesn't have direct relation counted here
+          return {
+            ...l,
+            owner: l.seller ? { id: l.seller.id, name: l.seller.name, email: l.seller.email, phone: l.seller.phone, phoneVerified: Boolean(l.seller.phoneVerifiedAt) } : null,
+            _count: { offers: l._count.offers, inquiries: inquiriesCount }
+          };
+        });
+        return res.json({ data });
+      } catch (dbErr) {
+        console.warn('Admin listings Prisma error, falling back to store:', dbErr.message);
+      }
+    }
     const listings = store.getAllListingsAdmin();
     return res.json({ data: listings });
   } catch (error) { return next(error); }
@@ -804,6 +871,18 @@ app.get('/api/admin/listings', requireAdmin, async (_req, res, next) => {
 app.patch('/api/admin/listings/:id/status', requireAdmin, async (req, res, next) => {
   try {
     const { status } = req.body;
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const listing = await db.listing.update({
+          where: { id: Number(req.params.id) },
+          data: { status }
+        });
+        return res.json({ data: listing });
+      } catch (dbErr) {
+        console.warn('Admin listing status Prisma error, falling back to store:', dbErr.message);
+      }
+    }
     const listing = store.adminUpdateListingStatus(req.params.id, status);
     if (!listing) return res.status(404).json({ error: 'Listing not found.' });
     return res.json({ data: listing });
@@ -812,6 +891,20 @@ app.patch('/api/admin/listings/:id/status', requireAdmin, async (req, res, next)
 
 app.patch('/api/admin/listings/:id/featured', requireAdmin, async (req, res, next) => {
   try {
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const existing = await db.listing.findUnique({ where: { id: Number(req.params.id) } });
+        if (!existing) return res.status(404).json({ error: 'Listing not found.' });
+        const listing = await db.listing.update({
+          where: { id: existing.id },
+          data: { isFeatured: !existing.isFeatured }
+        });
+        return res.json({ data: listing });
+      } catch (dbErr) {
+        console.warn('Admin listing featured Prisma error, falling back to store:', dbErr.message);
+      }
+    }
     const listing = store.adminToggleListingFeatured(req.params.id);
     if (!listing) return res.status(404).json({ error: 'Listing not found.' });
     return res.json({ data: listing });
@@ -820,6 +913,24 @@ app.patch('/api/admin/listings/:id/featured', requireAdmin, async (req, res, nex
 
 app.get('/api/admin/requests', requireAdmin, async (_req, res, next) => {
   try {
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const requests = await db.propertyRequest.findMany({
+          include: {
+            requester: { select: { id: true, name: true, email: true, phone: true, phoneVerifiedAt: true } }
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+        const data = requests.map(r => ({
+          ...r,
+          requester: r.requester ? { id: r.requester.id, name: r.requester.name, email: r.requester.email, phone: r.requester.phone, phoneVerified: Boolean(r.requester.phoneVerifiedAt) } : null
+        }));
+        return res.json({ data });
+      } catch (dbErr) {
+        console.warn('Admin requests Prisma error, falling back to store:', dbErr.message);
+      }
+    }
     const requests = store.getAllRequestsAdmin();
     return res.json({ data: requests });
   } catch (error) { return next(error); }
@@ -828,6 +939,18 @@ app.get('/api/admin/requests', requireAdmin, async (_req, res, next) => {
 app.patch('/api/admin/requests/:id/status', requireAdmin, async (req, res, next) => {
   try {
     const { status } = req.body;
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const request = await db.propertyRequest.update({
+          where: { id: Number(req.params.id) },
+          data: { status }
+        });
+        return res.json({ data: request });
+      } catch (dbErr) {
+        console.warn('Admin request status Prisma error, falling back to store:', dbErr.message);
+      }
+    }
     const request = store.adminUpdateRequestStatus(req.params.id, status);
     if (!request) return res.status(404).json({ error: 'Request not found.' });
     return res.json({ data: request });
@@ -836,6 +959,39 @@ app.patch('/api/admin/requests/:id/status', requireAdmin, async (req, res, next)
 
 app.get('/api/admin/offers', requireAdmin, async (_req, res, next) => {
   try {
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const offers = await db.offer.findMany({
+          include: {
+            buyer: { select: { id: true, name: true, email: true, phone: true } },
+            listing: {
+              include: {
+                images: { where: { isPrimary: true }, take: 1 },
+                seller: { select: { id: true, name: true, email: true, phone: true } }
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+        const data = offers.map(o => ({
+          ...o,
+          buyer: o.buyer,
+          listing: o.listing ? {
+            id: o.listing.id,
+            title: o.listing.title,
+            city: o.listing.city,
+            price: o.listing.price,
+            purpose: o.listing.purpose,
+            images: o.listing.images
+          } : null,
+          owner: o.listing?.seller || null
+        }));
+        return res.json({ data });
+      } catch (dbErr) {
+        console.warn('Admin offers Prisma error, falling back to store:', dbErr.message);
+      }
+    }
     const offers = store.getAllOffersAdmin();
     return res.json({ data: offers });
   } catch (error) { return next(error); }
@@ -844,6 +1000,18 @@ app.get('/api/admin/offers', requireAdmin, async (_req, res, next) => {
 app.patch('/api/admin/offers/:id/status', requireAdmin, async (req, res, next) => {
   try {
     const { status, adminNote } = req.body;
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const offer = await db.offer.update({
+          where: { id: Number(req.params.id) },
+          data: { status, ...(adminNote !== undefined && { ownerResponse: adminNote }) }
+        });
+        return res.json({ data: offer });
+      } catch (dbErr) {
+        console.warn('Admin offer status Prisma error, falling back to store:', dbErr.message);
+      }
+    }
     const offer = store.adminUpdateOfferStatus(req.params.id, status, adminNote);
     if (!offer) return res.status(404).json({ error: 'Offer not found.' });
     return res.json({ data: offer });
@@ -852,6 +1020,28 @@ app.patch('/api/admin/offers/:id/status', requireAdmin, async (req, res, next) =
 
 app.get('/api/admin/contacts', requireAdmin, async (_req, res, next) => {
   try {
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const contacts = await db.contactRequest.findMany({
+          include: {
+            sender: { select: { id: true, name: true, email: true, phone: true } },
+            recipient: { select: { id: true, name: true, email: true, phone: true } },
+            listing: { include: { images: { where: { isPrimary: true }, take: 1 } } }
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+        const data = contacts.map(c => ({
+          ...c,
+          sender: c.sender,
+          recipient: c.recipient,
+          listing: c.listing ? { id: c.listing.id, title: c.listing.title, city: c.listing.city, images: c.listing.images } : null
+        }));
+        return res.json({ data });
+      } catch (dbErr) {
+        console.warn('Admin contacts Prisma error, falling back to store:', dbErr.message);
+      }
+    }
     const contacts = store.getAllContactsAdmin();
     return res.json({ data: contacts });
   } catch (error) { return next(error); }
@@ -860,6 +1050,18 @@ app.get('/api/admin/contacts', requireAdmin, async (_req, res, next) => {
 app.patch('/api/admin/contacts/:id/status', requireAdmin, async (req, res, next) => {
   try {
     const { status, adminNote } = req.body;
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const contact = await db.contactRequest.update({
+          where: { id: Number(req.params.id) },
+          data: { status }
+        });
+        return res.json({ data: contact });
+      } catch (dbErr) {
+        console.warn('Admin contact status Prisma error, falling back to store:', dbErr.message);
+      }
+    }
     const contact = store.adminUpdateContactStatus(req.params.id, status, adminNote);
     if (!contact) return res.status(404).json({ error: 'Contact not found.' });
     return res.json({ data: contact });
@@ -868,6 +1070,29 @@ app.patch('/api/admin/contacts/:id/status', requireAdmin, async (req, res, next)
 
 app.get('/api/admin/users', requireAdmin, async (_req, res, next) => {
   try {
+    const db = await getPrisma();
+    if (db) {
+      try {
+        const users = await db.user.findMany({
+          where: { role: { not: 'ADMIN' } },
+          include: {
+            _count: { select: { listings: true, offers: true, requests: true } }
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+        const data = users.map(u => ({
+          id: u.id, name: u.name, email: u.email, phone: u.phone, role: u.role,
+          phoneVerified: Boolean(u.phoneVerifiedAt),
+          listingsCount: u._count.listings,
+          offersCount: u._count.offers,
+          requestsCount: u._count.requests,
+          createdAt: u.createdAt
+        }));
+        return res.json({ data });
+      } catch (dbErr) {
+        console.warn('Admin users Prisma error, falling back to store:', dbErr.message);
+      }
+    }
     const users = store.getAllUsersAdmin();
     return res.json({ data: users });
   } catch (error) { return next(error); }
