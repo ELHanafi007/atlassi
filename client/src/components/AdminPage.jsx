@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const API = '/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const API = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
 
 /* ─── tiny helpers ─────────────────────────────────────────── */
 const fmt = (n) =>
