@@ -544,6 +544,15 @@ app.patch('/api/listings/:id/status', requireAuth, async (req, res, next) => {
     const { status } = req.body;
     if (!status) return res.status(400).json({ error: 'Status is required.' });
 
+    // Only Admin can set status to PUBLISHED
+    if ((status === 'PUBLISHED' || status === 'PAUSED') && req.user.role !== 'ADMIN' && status === 'PUBLISHED') {
+      return res.status(403).json({ error: "Seule l'équipe d'administration Atlassi peut valider et publier une annonce." });
+    }
+
+    let dbStatus = status;
+    if (status === 'UNPUBLISHED') dbStatus = 'PAUSED';
+    if (status === 'PENDING') dbStatus = 'DRAFT';
+
     const db = await getPrisma();
     if (db) {
       const listing = await db.listing.findFirst({
@@ -552,7 +561,7 @@ app.patch('/api/listings/:id/status', requireAuth, async (req, res, next) => {
       if (!listing) return res.status(404).json({ error: 'Listing not found or unauthorized.' });
       const updated = await db.listing.update({
         where: { id: listing.id },
-        data: { status }
+        data: { status: dbStatus }
       });
       return res.json({ data: updated });
     }
