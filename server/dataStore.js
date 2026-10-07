@@ -23,6 +23,16 @@ const verifyPassword = (password, storedCombined) => {
 
 const INITIAL_USERS = [
   {
+    id: 999,
+    name: 'Atlassi Admin',
+    email: 'admin@atlassi.ma',
+    phone: '+212 600 000 000',
+    password: hashPassword('atlassi2024'),
+    role: 'ADMIN',
+    phoneVerifiedAt: new Date('2026-01-01T00:00:00Z').toISOString(),
+    createdAt: new Date('2026-01-01T00:00:00Z').toISOString()
+  },
+  {
     id: 1,
     name: 'Karim Bennani',
     email: 'karim@atlassi.ma',
@@ -699,11 +709,173 @@ class DataStore {
       listingId: Number(listingId),
       message: message.trim(),
       status: 'UNREAD',
+      adminNote: null,
       createdAt: new Date().toISOString()
     };
     this.data.contacts.push(contact);
     this.save();
     return contact;
+  }
+
+  // ─── ADMIN METHODS ─────────────────────────────────────────────────────────
+  // These methods expose full contact details and are ONLY called from
+  // admin-protected API routes — never from public endpoints.
+
+  getAllListingsAdmin() {
+    return this.data.listings
+      .map(l => {
+        const seller = this.findUserById(l.sellerId);
+        const offersCount = this.data.offers.filter(o => o.listingId === l.id).length;
+        const inquiriesCount = this.data.contacts.filter(c => c.listingId === l.id).length;
+        return {
+          ...l,
+          owner: seller ? {
+            id: seller.id,
+            name: seller.name,
+            email: seller.email,
+            phone: seller.phone,
+            phoneVerified: Boolean(seller.phoneVerifiedAt)
+          } : null,
+          _count: { offers: offersCount, inquiries: inquiriesCount }
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  getAllRequestsAdmin() {
+    return this.data.requests
+      .map(r => {
+        const requester = this.findUserById(r.requesterId);
+        return {
+          ...r,
+          requester: requester ? {
+            id: requester.id,
+            name: requester.name,
+            email: requester.email,
+            phone: requester.phone,
+            phoneVerified: Boolean(requester.phoneVerifiedAt)
+          } : null
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  getAllOffersAdmin() {
+    return this.data.offers
+      .map(o => {
+        const buyer = this.findUserById(o.buyerId);
+        const listing = this.data.listings.find(l => l.id === o.listingId);
+        const owner = listing ? this.findUserById(listing.sellerId) : null;
+        return {
+          ...o,
+          buyer: buyer ? { id: buyer.id, name: buyer.name, email: buyer.email, phone: buyer.phone } : null,
+          listing: listing ? {
+            id: listing.id,
+            title: listing.title,
+            city: listing.city,
+            price: listing.price,
+            purpose: listing.purpose,
+            images: listing.images?.slice(0, 1)
+          } : null,
+          owner: owner ? { id: owner.id, name: owner.name, email: owner.email, phone: owner.phone } : null
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  getAllContactsAdmin() {
+    return this.data.contacts
+      .map(c => {
+        const sender = this.findUserById(c.senderId);
+        const recipient = this.findUserById(c.recipientId);
+        const listing = this.data.listings.find(l => l.id === c.listingId);
+        return {
+          ...c,
+          sender: sender ? { id: sender.id, name: sender.name, email: sender.email, phone: sender.phone } : null,
+          recipient: recipient ? { id: recipient.id, name: recipient.name, email: recipient.email, phone: recipient.phone } : null,
+          listing: listing ? { id: listing.id, title: listing.title, city: listing.city, images: listing.images?.slice(0, 1) } : null
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  getAllUsersAdmin() {
+    return this.data.users
+      .filter(u => u.role !== 'ADMIN')
+      .map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        role: u.role,
+        phoneVerified: Boolean(u.phoneVerifiedAt),
+        listingsCount: this.data.listings.filter(l => l.sellerId === u.id).length,
+        offersCount: this.data.offers.filter(o => o.buyerId === u.id).length,
+        requestsCount: this.data.requests.filter(r => r.requesterId === u.id).length,
+        createdAt: u.createdAt
+      }))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  adminUpdateListingStatus(listingId, status) {
+    const listing = this.data.listings.find(l => l.id === Number(listingId));
+    if (!listing) return null;
+    listing.status = status;
+    listing.updatedAt = new Date().toISOString();
+    this.save();
+    return listing;
+  }
+
+  adminToggleListingFeatured(listingId) {
+    const listing = this.data.listings.find(l => l.id === Number(listingId));
+    if (!listing) return null;
+    listing.isFeatured = !listing.isFeatured;
+    listing.updatedAt = new Date().toISOString();
+    this.save();
+    return listing;
+  }
+
+  adminUpdateOfferStatus(offerId, status, adminNote) {
+    const offer = this.data.offers.find(o => o.id === Number(offerId));
+    if (!offer) return null;
+    offer.status = status;
+    if (adminNote !== undefined) offer.ownerResponse = adminNote;
+    offer.updatedAt = new Date().toISOString();
+    this.save();
+    return offer;
+  }
+
+  adminUpdateContactStatus(contactId, status, adminNote) {
+    const contact = this.data.contacts.find(c => c.id === Number(contactId));
+    if (!contact) return null;
+    contact.status = status;
+    if (adminNote !== undefined) contact.adminNote = adminNote;
+    this.save();
+    return contact;
+  }
+
+  adminUpdateRequestStatus(requestId, status) {
+    const request = this.data.requests.find(r => r.id === Number(requestId));
+    if (!request) return null;
+    request.status = status;
+    request.updatedAt = new Date().toISOString();
+    this.save();
+    return request;
+  }
+
+  getAdminStats() {
+    return {
+      totalListings: this.data.listings.length,
+      publishedListings: this.data.listings.filter(l => l.status === 'PUBLISHED').length,
+      pendingListings: this.data.listings.filter(l => l.status === 'PENDING').length,
+      totalRequests: this.data.requests.length,
+      activeRequests: this.data.requests.filter(r => r.status === 'ACTIVE').length,
+      totalOffers: this.data.offers.length,
+      pendingOffers: this.data.offers.filter(o => o.status === 'PENDING').length,
+      totalContacts: this.data.contacts.length,
+      unreadContacts: this.data.contacts.filter(c => c.status === 'UNREAD').length,
+      totalUsers: this.data.users.filter(u => u.role !== 'ADMIN').length,
+    };
   }
 }
 

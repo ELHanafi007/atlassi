@@ -13,6 +13,11 @@ model User {
   password            String
   phone               String?           @unique
   phoneVerifiedAt     DateTime?
+  phoneOtp            String?
+  phoneOtpExpiry      DateTime?
+  emailVerifiedAt     DateTime?
+  emailVerifyToken    String?           @unique
+  emailVerifyExpiry   DateTime?
   role                Role              @default(USER)
   listings            Listing[]
   offers              Offer[]
@@ -48,6 +53,7 @@ model Listing {
   condition     String?
   furnished     Boolean        @default(false)
   amenities     String[]
+  instagramVideoUrl String?
   isFeatured    Boolean        @default(false)
   seller        User           @relation(fields: [sellerId], references: [id])
   sellerId      Int

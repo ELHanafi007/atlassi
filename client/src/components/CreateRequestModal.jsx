@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, ArrowUpRight, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
+import { X, ArrowUpRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { requestsApi } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 
 export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onShowToast, onOpenAuth }) {
+  const { t, translateCity, translateType, isRtl } = useLanguage();
+
   const [formData, setFormData] = useState({
     purpose: 'BUY',
     type: 'VILLA',
@@ -29,7 +32,7 @@ export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onS
     }
 
     if (!formData.description.trim()) {
-      setError('Please provide a short description of what you are looking for.');
+      setError(isRtl ? 'يرجى تقديم وصف موجز عما تبحث عنه.' : 'Veuillez fournir une courte description de ce que vous recherchez.');
       return;
     }
 
@@ -49,10 +52,10 @@ export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onS
 
       const result = await requestsApi.create(payload);
       setSuccess(true);
-      onShowToast({ type: 'success', message: 'Your property request has been posted!' });
+      onShowToast({ type: 'success', message: t('toasts.requestPosted') });
       if (onRequestCreated) onRequestCreated(result.data);
     } catch (err) {
-      setError(err.message || 'Failed to submit request.');
+      setError(err.message || (isRtl ? 'فشل إرسال الطلب.' : 'Échec de la soumission de la demande.'));
     } finally {
       setLoading(false);
     }
@@ -74,8 +77,8 @@ export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onS
       >
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full text-stone-500 hover:text-stone-800 hover:bg-stone-200 transition-colors"
-          aria-label="Close"
+          className={`absolute top-5 ${isRtl ? 'left-5' : 'right-5'} p-2 rounded-full text-stone-500 hover:text-stone-800 hover:bg-stone-200 transition-colors cursor-pointer`}
+          aria-label={t('modal.close')}
         >
           <X className="w-5 h-5" />
         </button>
@@ -86,29 +89,29 @@ export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onS
               <CheckCircle2 className="w-8 h-8" />
             </div>
             <h2 className="text-2xl font-serif font-bold text-[#1b2622] mb-2">
-              Request Published
+              {t('createRequest.successTitle')}
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 max-w-sm mb-6 leading-relaxed">
-              Moroccan homeowners matching your criteria in <strong>{formData.city}</strong> will be alerted to contact you directly.
+              {t('createRequest.successDesc', translateCity(formData.city))}
             </p>
             <button
               onClick={onClose}
-              className="px-6 py-2.5 rounded-full bg-[#1b2622] text-white text-xs font-semibold hover:bg-stone-800 transition-all"
+              className="px-6 py-2.5 rounded-full bg-[#1b2622] text-white text-xs font-semibold hover:bg-stone-800 transition-all cursor-pointer"
             >
-              Done
+              {t('createRequest.doneBtn')}
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs">
             <div>
-              <span className="text-[11px] font-bold tracking-wider text-[#bd6b46] uppercase block mb-1">
-                Broadcast to Owners
+              <span className="text-[11px] font-bold tracking-wider text-[#bd6b46] block mb-1">
+                {t('createRequest.kicker')}
               </span>
               <h2 className="text-2xl font-serif font-bold text-[#1b2622]">
-                Post a Property Request
+                {t('createRequest.title')}
               </h2>
               <p className="text-xs text-stone-500 mt-1">
-                Tell verified Moroccan property owners exactly what you are looking to buy or rent.
+                {t('createRequest.subtitle')}
               </p>
             </div>
 
@@ -122,32 +125,32 @@ export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onS
             {/* Purpose & Type */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-stone-700 mb-1">Looking to *</label>
+                <label className="block font-semibold text-stone-700 mb-1">{t('createRequest.lookingToLabel')}</label>
                 <div className="flex gap-1 bg-[#ede8df] p-1 rounded-xl">
                   {['BUY', 'RENT'].map((p) => (
                     <button
                       key={p}
                       type="button"
                       onClick={() => setFormData({ ...formData, purpose: p })}
-                      className={`flex-1 py-1.5 rounded-lg font-semibold transition-all ${
-                        formData.purpose === p ? 'bg-white text-[#1b2622] shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                      className={`flex-1 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+                        formData.purpose === p ? 'bg-white text-[#1b2622] shadow-2xs' : 'text-stone-600 hover:text-stone-900'
                       }`}
                     >
-                      {p === 'BUY' ? 'Buy' : 'Rent'}
+                      {p === 'BUY' ? t('createRequest.buy') : t('createRequest.rent')}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-stone-700 mb-1">Type *</label>
+                <label className="block font-semibold text-stone-700 mb-1">{t('createRequest.typeLabel')}</label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full bg-white border border-[#ded7cb] rounded-xl px-3 py-2 font-medium text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#bd6b46]"
+                  className="w-full bg-white border border-[#ded7cb] rounded-xl px-3 py-2 font-medium text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#bd6b46] cursor-pointer"
                 >
-                  {moroccanTypes.map((t) => (
-                    <option key={t} value={t.toUpperCase()}>{t}</option>
+                  {moroccanTypes.map((typeName) => (
+                    <option key={typeName} value={typeName.toUpperCase()}>{translateType(typeName)}</option>
                   ))}
                 </select>
               </div>
@@ -156,25 +159,25 @@ export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onS
             {/* City & Neighborhood */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-semibold text-stone-700 mb-1">Target City *</label>
+                <label className="block font-semibold text-stone-700 mb-1">{t('createRequest.cityLabel')}</label>
                 <select
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="w-full bg-white border border-[#ded7cb] rounded-xl px-3 py-2 font-medium text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#bd6b46]"
+                  className="w-full bg-white border border-[#ded7cb] rounded-xl px-3 py-2 font-medium text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#bd6b46] cursor-pointer"
                 >
-                  {moroccanCities.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                  {moroccanCities.map((cityName) => (
+                    <option key={cityName} value={cityName}>{translateCity(cityName)}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block font-semibold text-stone-700 mb-1">Preferred Neighborhood</label>
+                <label className="block font-semibold text-stone-700 mb-1">{t('createRequest.neighborhoodLabel')}</label>
                 <input
                   type="text"
                   value={formData.neighborhood}
                   onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
-                  placeholder="e.g. Medina, Malabata, Racine"
+                  placeholder={t('createRequest.neighborhoodPlaceholder')}
                   className="w-full bg-white border border-[#ded7cb] rounded-xl px-3 py-2 text-xs text-[#1b2622] focus:outline-none focus:ring-1 focus:ring-[#bd6b46]"
                 />
               </div>
@@ -184,20 +187,20 @@ export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onS
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-semibold text-stone-700 mb-1">
-                  Max Budget (MAD)
+                  {t('createRequest.maxBudgetLabel')}
                 </label>
                 <input
                   type="number"
                   value={formData.maxBudget}
                   onChange={(e) => setFormData({ ...formData, maxBudget: e.target.value })}
-                  placeholder="e.g. 15000 / mo"
+                  placeholder={t('createRequest.maxBudgetPlaceholder')}
                   className="w-full bg-white border border-[#ded7cb] rounded-xl px-3 py-2 font-mono text-xs text-[#1b2622] focus:outline-none focus:ring-1 focus:ring-[#bd6b46]"
                 />
               </div>
 
               <div>
                 <label className="block font-semibold text-stone-700 mb-1">
-                  Min Bedrooms
+                  {t('createRequest.minBedroomsLabel')}
                 </label>
                 <input
                   type="number"
@@ -211,14 +214,14 @@ export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onS
             {/* Description */}
             <div>
               <label className="block font-semibold text-stone-700 mb-1">
-                Your Specific Search Criteria *
+                {t('createRequest.criteriaLabel')}
               </label>
               <textarea
                 required
                 rows={3}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="e.g. Seeking high-ceiling apartment with balcony facing the bay, parking space essential, move-in within 6 weeks..."
+                placeholder={t('createRequest.criteriaPlaceholder')}
                 className="w-full bg-white border border-[#ded7cb] rounded-xl p-3 text-xs text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-[#bd6b46] resize-none"
               />
             </div>
@@ -226,10 +229,10 @@ export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onS
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 w-full py-3.5 rounded-xl bg-[#1b2622] hover:bg-[#2a3832] text-white text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 active:scale-[0.99]"
+              className="mt-2 w-full py-3.5 rounded-xl bg-[#1b2622] hover:bg-[#2a3832] text-white text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 active:scale-[0.99] cursor-pointer"
             >
-              <span>{loading ? 'Broadcasting request…' : 'Broadcast Request to Owners'}</span>
-              <ArrowUpRight className="w-4 h-4 text-[#bd6b46]" />
+              <span>{loading ? t('createRequest.submittingBtn') : t('createRequest.submitBtn')}</span>
+              <ArrowUpRight className={`w-4 h-4 text-[#bd6b46] ${isRtl ? 'rotate-[-90deg]' : ''}`} />
             </button>
           </form>
         )}
@@ -237,3 +240,5 @@ export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onS
     </div>
   );
 }
+
+export default CreateRequestModal;

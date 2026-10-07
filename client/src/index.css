@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -22,6 +22,8 @@
   /* Fonts */
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-serif: 'Newsreader', Georgia, serif;
+  --font-arabic-sans: 'Cairo', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-arabic-serif: 'Amiri', 'Newsreader', Georgia, serif;
 }
 
 html {
@@ -31,6 +33,15 @@ html {
   font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+html[dir="rtl"] {
+  font-family: var(--font-arabic-sans);
+}
+
+html[dir="rtl"] .font-serif {
+  font-family: var(--font-arabic-serif);
+  letter-spacing: normal;
 }
 
 body {

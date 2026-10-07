@@ -1,13 +1,13 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { 
-  Sparkles, ArrowUpRight, Plus, Compass, 
-  Building2, ShieldCheck, Heart, Search, HelpCircle, 
-  SlidersHorizontal, MessageSquarePlus 
+  Sparkles, ArrowUpRight, Plus, 
+  HelpCircle, MessageSquarePlus 
 } from 'lucide-react';
 import './App.css';
 
 import { auth, listingsApi, requestsApi } from './lib/api';
+import { useLanguage } from './lib/i18n';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { FilterBar } from './components/FilterBar';
@@ -20,6 +20,8 @@ import { AuthModal } from './components/AuthModal';
 import { Toast } from './components/Toast';
 
 export function App() {
+  const { t, lang, translateCity, translateType, formatPrice, isRtl } = useLanguage();
+
   // State: Authentication
   const [currentUser, setCurrentUser] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -109,11 +111,11 @@ export function App() {
       setListings(res.data || []);
     } catch (err) {
       console.error('Failed to load listings:', err);
-      setError('Unable to load listings. The server may be restarting.');
+      setError(t('portfolio.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [purpose, city, propertyType, sort, minPrice, maxPrice, minBedrooms, searchQuery]);
+  }, [purpose, city, propertyType, sort, minPrice, maxPrice, minBedrooms, searchQuery, t]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -138,7 +140,7 @@ export function App() {
       const next = exists ? prev.filter((item) => item !== id) : [...prev, id];
       showToast({
         type: exists ? 'info' : 'success',
-        message: exists ? 'Removed from saved homes.' : 'Saved to your collection.'
+        message: exists ? t('toasts.removedFromSaved') : t('toasts.savedToCollection')
       });
       return next;
     });
@@ -172,7 +174,7 @@ export function App() {
     }
     localStorage.removeItem('atlassi-token');
     setCurrentUser(null);
-    showToast({ type: 'info', message: 'Signed out successfully.' });
+    showToast({ type: 'info', message: t('toasts.signedOut') });
   };
 
   const handleListingCreated = (newListing) => {
@@ -184,13 +186,28 @@ export function App() {
     setRequests((prev) => [newRequest, ...prev]);
   };
 
+  // Localize sample request descriptions
+  const getLocalizedRequestDescription = (req) => {
+    if (req.id === 1) {
+      return lang === 'ar'
+        ? "مهندس معماري يبحث عن شقة هادئة في طابق علوي، مفعمة بالنور الطبيعي ومزودة بموقف سيارات محروس في حي كوتييه أو غاسين."
+        : "Architecte en mutation à la recherche d'un appartement calme en étage élevé, baigné de lumière naturelle avec parking sécurisé à Gauthier ou Racine.";
+    }
+    if (req.id === 2) {
+      return lang === 'ar'
+        ? "مطلوب فيلا محفظة من طابق واحد مع إطلالة مفتوحة على جبال الأطلس وأشجار معمرة، على بعد أقل من 20 دقيقة من وسط المدينة."
+        : "Recherche villa titrée de plain-pied avec vue dégagée sur les montagnes de l'Atlas et arbres matures à moins de 20 min du centre-ville.";
+    }
+    return req.description;
+  };
+
   return (
     <div className="min-h-screen bg-[#f9f8f5] text-[#19221f] flex flex-col font-sans selection:bg-[#e2c1b1]">
       
       {/* Toast Notification */}
       <Toast toast={toast} onClose={() => setToast(null)} />
 
-      {/* Navigation Header */}
+      {/* Navigation Header with Language Toggle */}
       <Navbar
         currentUser={currentUser}
         savedCount={savedIds.length}
@@ -259,26 +276,26 @@ export function App() {
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#bd6b46] mb-1">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>
-                  {showFavoritesOnly ? 'Your Saved Collection' : 'The Atlassi Portfolio'}
+                  {showFavoritesOnly ? t('portfolio.savedBadge') : t('portfolio.badge')}
                 </span>
               </div>
               <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#19221f]">
                 {showFavoritesOnly
-                  ? 'Saved Moroccan Homes'
+                  ? t('portfolio.savedHomesTitle')
                   : city
-                  ? `Homes in ${city}`
-                  : 'Considered Moroccan Architecture'}
+                  ? t('portfolio.homesInCity', translateCity(city))
+                  : t('portfolio.consideredArchitecture')}
               </h2>
             </div>
 
             <div className="text-xs text-stone-500 font-medium">
-              Showing <strong className="font-mono text-stone-900">{displayedListings.length}</strong> {displayedListings.length === 1 ? 'property' : 'properties'}
+              {t('portfolio.showingCount', displayedListings.length)}
               {showFavoritesOnly && (
                 <button
                   onClick={() => setShowFavoritesOnly(false)}
-                  className="ml-3 text-[#bd6b46] hover:underline font-semibold"
+                  className="ms-3 text-[#bd6b46] hover:underline font-semibold cursor-pointer"
                 >
-                  View all
+                  {t('portfolio.viewAll')}
                 </button>
               )}
             </div>
@@ -305,9 +322,9 @@ export function App() {
               <p className="text-sm text-rose-800 mb-4">{error}</p>
               <button
                 onClick={fetchListings}
-                className="px-5 py-2.5 bg-[#1b2622] text-white text-xs font-semibold rounded-xl hover:bg-stone-800 transition-all"
+                className="px-5 py-2.5 bg-[#1b2622] text-white text-xs font-semibold rounded-xl hover:bg-stone-800 transition-all cursor-pointer"
               >
-                Try reloading
+                {t('portfolio.tryReloading')}
               </button>
             </div>
           )}
@@ -319,24 +336,27 @@ export function App() {
                 <HelpCircle className="w-6 h-6" />
               </div>
               <h3 className="text-2xl font-serif font-bold text-[#1b2622] mb-2">
-                No matching residences found
+                {t('portfolio.noResidencesTitle')}
               </h3>
               <p className="text-xs sm:text-sm text-stone-500 max-w-sm mx-auto mb-6 leading-relaxed">
-                We couldn’t find any homes matching your exact filters. Adjust your search criteria or post a custom property request.
+                {t('portfolio.noResidencesDesc')}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
                   onClick={handleResetFilters}
-                  className="px-5 py-2.5 rounded-xl border border-[#ded7cb] text-xs font-semibold text-stone-700 hover:bg-stone-100 transition-colors"
+                  className="px-5 py-2.5 rounded-xl border border-[#ded7cb] text-xs font-semibold text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
                 >
-                  Clear all filters
+                  {t('portfolio.clearAllFilters')}
                 </button>
                 <button
-                  onClick={() => setShowCreateRequestModal(true)}
-                  className="px-5 py-2.5 rounded-xl bg-[#1b2622] text-white text-xs font-semibold hover:bg-stone-800 flex items-center gap-1.5 transition-colors"
+                  onClick={() => {
+                    if (!currentUser) setShowAuthModal(true);
+                    else setShowCreateRequestModal(true);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-[#1b2622] text-white text-xs font-semibold hover:bg-stone-800 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5 text-[#bd6b46]" />
-                  Broadcast property request
+                  <span>{t('portfolio.broadcastRequest')}</span>
                 </button>
               </div>
             </div>
@@ -371,14 +391,14 @@ export function App() {
               <div className="lg:col-span-8">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#ded7cb] text-[#bd6b46] text-xs font-semibold uppercase tracking-wider mb-3">
                   <MessageSquarePlus className="w-3.5 h-3.5" />
-                  <span>Direct Buyer & Tenant Requests</span>
+                  <span>{t('requests.badge')}</span>
                 </div>
                 <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#19221f] leading-tight">
-                  Can’t find what you need?<br />
-                  <span className="italic font-normal text-[#bd6b46]">Let owners come to you.</span>
+                  {t('requests.headlineMain')}<br />
+                  <span className="italic font-normal text-[#bd6b46]">{t('requests.headlineSub')}</span>
                 </h2>
                 <p className="text-xs sm:text-sm text-stone-600 mt-2 max-w-xl leading-relaxed">
-                  Post your exact specifications (budget, preferred city, style). Verified Moroccan property owners and developers review active briefs daily.
+                  {t('requests.subcopy')}
                 </p>
               </div>
 
@@ -388,10 +408,10 @@ export function App() {
                     if (!currentUser) setShowAuthModal(true);
                     else setShowCreateRequestModal(true);
                   }}
-                  className="px-6 py-3.5 rounded-full bg-[#1b2622] hover:bg-[#283631] text-white text-xs font-bold tracking-wider uppercase flex items-center gap-2 transition-all shadow-md active:scale-98"
+                  className="px-6 py-3.5 rounded-full bg-[#1b2622] hover:bg-[#283631] text-white text-xs font-bold tracking-wider uppercase flex items-center gap-2 transition-all shadow-md active:scale-98 cursor-pointer"
                 >
                   <Plus className="w-4 h-4 text-[#bd6b46]" />
-                  <span>Broadcast a request</span>
+                  <span>{t('requests.broadcastBtn')}</span>
                 </button>
               </div>
             </div>
@@ -406,20 +426,20 @@ export function App() {
                   <div>
                     <div className="flex items-center justify-between text-[11px] text-stone-400 font-semibold uppercase tracking-wider mb-2">
                       <span className="text-[#bd6b46]">
-                        {req.purpose === 'SALE' ? 'Looking to Buy' : 'Looking to Rent'} · {req.type || 'Property'}
+                        {req.purpose === 'SALE' ? t('requests.lookingToBuy') : t('requests.lookingToRent')} · {translateType(req.type || 'Property')}
                       </span>
-                      <span>{req.city}</span>
+                      <span>{translateCity(req.city)}</span>
                     </div>
                     <p className="text-xs text-stone-700 font-medium leading-relaxed mb-3">
-                      “{req.description}”
+                      “{getLocalizedRequestDescription(req)}”
                     </p>
                   </div>
 
                   <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-[11px]">
                     <span className="text-stone-500 font-mono">
-                      Max budget: {req.maxBudget ? `${new Intl.NumberFormat('en-US').format(req.maxBudget)} MAD` : 'Flexible'}
+                      {t('requests.maxBudget')} {req.maxBudget ? formatPrice(req.maxBudget, req.purpose) : t('requests.flexible')}
                     </span>
-                    <span className="font-semibold text-[#1b2622]">Active Brief</span>
+                    <span className="font-semibold text-[#1b2622]">{t('requests.activeBrief')}</span>
                   </div>
                 </div>
               ))}
@@ -431,41 +451,41 @@ export function App() {
         <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-[#e7e2d8]">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <span className="text-xs font-bold uppercase tracking-wider text-[#bd6b46] block mb-2">
-              Our Perspective
+              {t('philosophy.badge')}
             </span>
             <h2 className="text-3xl sm:text-5xl font-serif font-bold text-[#19221f] leading-tight">
-              A curated standard for<br />
-              <span className="italic font-normal text-[#bd6b46]">Moroccan living.</span>
+              {t('philosophy.headlineMain')}<br />
+              <span className="italic font-normal text-[#bd6b46]">{t('philosophy.headlineSub')}</span>
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-stone-700">
             <div className="p-6 rounded-2xl bg-white border border-[#ded7cb] shadow-2xs flex flex-col justify-between">
               <div>
-                <span className="font-serif text-3xl font-bold text-[#bd6b46] block mb-4">01</span>
-                <h3 className="text-lg font-bold text-[#19221f] mb-2">Verified Provenance</h3>
+                <span className="font-serif text-3xl font-bold text-[#bd6b46] block mb-4">{t('philosophy.p1Number')}</span>
+                <h3 className="text-lg font-bold text-[#19221f] mb-2">{t('philosophy.p1Title')}</h3>
                 <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-                  Every listed riad, villa, and modern sea apartment has verified ownership or direct mandate. No duplicate or ghost listings.
+                  {t('philosophy.p1Desc')}
                 </p>
               </div>
             </div>
 
             <div className="p-6 rounded-2xl bg-white border border-[#ded7cb] shadow-2xs flex flex-col justify-between">
               <div>
-                <span className="font-serif text-3xl font-bold text-[#bd6b46] block mb-4">02</span>
-                <h3 className="text-lg font-bold text-[#19221f] mb-2">Architectural Respect</h3>
+                <span className="font-serif text-3xl font-bold text-[#bd6b46] block mb-4">{t('philosophy.p2Number')}</span>
+                <h3 className="text-lg font-bold text-[#19221f] mb-2">{t('philosophy.p2Title')}</h3>
                 <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-                  We celebrate Moroccan artisanal heritage—from hand-chiseled Fez zellige to lime tadelakt plaster and Atlas cedar wood.
+                  {t('philosophy.p2Desc')}
                 </p>
               </div>
             </div>
 
             <div className="p-6 rounded-2xl bg-white border border-[#ded7cb] shadow-2xs flex flex-col justify-between">
               <div>
-                <span className="font-serif text-3xl font-bold text-[#bd6b46] block mb-4">03</span>
-                <h3 className="text-lg font-bold text-[#19221f] mb-2">Direct Negotiation</h3>
+                <span className="font-serif text-3xl font-bold text-[#bd6b46] block mb-4">{t('philosophy.p3Number')}</span>
+                <h3 className="text-lg font-bold text-[#19221f] mb-2">{t('philosophy.p3Title')}</h3>
                 <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-                  Direct message property owners, propose structured offers, and arrange private visits with complete transparency.
+                  {t('philosophy.p3Desc')}
                 </p>
               </div>
             </div>
@@ -480,18 +500,18 @@ export function App() {
           <div className="flex items-center gap-2">
             <span className="text-2xl font-serif font-bold text-white tracking-tight">atlassi</span>
             <span className="w-2 h-2 rounded-full bg-[#bd6b46]" />
-            <span className="text-xs text-stone-400 ml-4">
-              © {new Date().getFullYear()} Atlassi Real Estate · Morocco
+            <span className="text-xs text-stone-400 ms-4">
+              {t('footer.copyright')}
             </span>
           </div>
 
-          <div className="flex items-center gap-6 text-xs text-stone-300">
-            <button onClick={() => { setCity('Marrakech'); setPurpose('ALL'); }} className="hover:text-white transition-colors">Marrakech</button>
-            <button onClick={() => { setCity('Tangier'); setPurpose('ALL'); }} className="hover:text-white transition-colors">Tangier</button>
-            <button onClick={() => { setCity('Casablanca'); setPurpose('ALL'); }} className="hover:text-white transition-colors">Casablanca</button>
-            <button onClick={() => { setCity('Fes'); setPurpose('ALL'); }} className="hover:text-white transition-colors">Fes</button>
-            <a href="#top" className="text-[#bd6b46] hover:underline font-semibold flex items-center gap-1">
-              Top <ArrowUpRight className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-6 text-xs text-stone-300 flex-wrap justify-center">
+            <button onClick={() => { setCity('Marrakech'); setPurpose('ALL'); }} className="hover:text-white transition-colors cursor-pointer">{translateCity('Marrakech')}</button>
+            <button onClick={() => { setCity('Tangier'); setPurpose('ALL'); }} className="hover:text-white transition-colors cursor-pointer">{translateCity('Tangier')}</button>
+            <button onClick={() => { setCity('Casablanca'); setPurpose('ALL'); }} className="hover:text-white transition-colors cursor-pointer">{translateCity('Casablanca')}</button>
+            <button onClick={() => { setCity('Fes'); setPurpose('ALL'); }} className="hover:text-white transition-colors cursor-pointer">{translateCity('Fes')}</button>
+            <a href="#top" className="text-[#bd6b46] hover:underline font-semibold flex items-center gap-1 cursor-pointer">
+              <span>{t('footer.top')}</span> <ArrowUpRight className={`w-3.5 h-3.5 ${isRtl ? 'rotate-[-90deg]' : ''}`} />
             </a>
           </div>
         </div>
@@ -511,6 +531,7 @@ export function App() {
             }}
             currentUser={currentUser}
             onShowToast={showToast}
+            onOpenAuth={() => setShowAuthModal(true)}
           />
         )}
       </AnimatePresence>

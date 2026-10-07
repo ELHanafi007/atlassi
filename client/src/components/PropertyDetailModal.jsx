@@ -3,11 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Heart, BedDouble, Bath, Maximize2, MapPin, 
   Sparkles, ChevronLeft, ChevronRight, Check, Send, 
-  Calendar, Layers, ShieldCheck, Home 
+  ShieldCheck 
 } from 'lucide-react';
 import { inquiriesApi } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 
-export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, onOpenOffer, currentUser, onShowToast }) {
+export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, onOpenOffer, currentUser, onShowToast, onOpenAuth }) {
+  const { t, localizeListing, isRtl } = useLanguage();
+  const localized = localizeListing(property);
+
   const images = property.images && property.images.length > 0
     ? property.images
     : [{ id: 1, url: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=85&w=1400', isPrimary: true }];
@@ -38,7 +42,8 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
     e.preventDefault();
     if (!inquiryMessage.trim()) return;
     if (!currentUser) {
-      onShowToast({ type: 'info', message: 'Please sign in to send an inquiry to the owner.' });
+      if (onOpenAuth) onOpenAuth();
+      else onShowToast({ type: 'info', message: t('modal.signInToInquire') });
       return;
     }
 
@@ -47,17 +52,13 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
       await inquiriesApi.send(property.id, inquiryMessage);
       setInquirySent(true);
       setInquiryMessage('');
-      onShowToast({ type: 'success', message: 'Your message has been sent directly to the owner.' });
+      onShowToast({ type: 'success', message: t('modal.inquirySentSuccess') });
     } catch (err) {
       onShowToast({ type: 'error', message: err.message || 'Failed to send inquiry.' });
     } finally {
       setInquirySending(false);
     }
   };
-
-  const formattedPrice = `${new Intl.NumberFormat('en-US').format(property.price)} ${
-    property.priceLabel || (property.purpose === 'RENT' ? 'MAD / mo' : 'MAD')
-  }`;
 
   return (
     <div 
@@ -77,8 +78,8 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
         {/* Sticky Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-white/90 backdrop-blur-md text-stone-800 hover:bg-white shadow-md transition-all active:scale-95"
-          aria-label="Close dialog"
+          className={`absolute top-4 ${isRtl ? 'left-4' : 'right-4'} z-30 p-2.5 rounded-full bg-white/90 backdrop-blur-md text-stone-800 hover:bg-white shadow-md transition-all active:scale-95 cursor-pointer`}
+          aria-label={t('modal.close')}
         >
           <X className="w-5 h-5" />
         </button>
@@ -89,50 +90,71 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
           {/* Gallery Carousel */}
           <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-stone-900 overflow-hidden">
             <AnimatePresence mode="wait">
-              <motion.img
-                key={activeImageIndex}
-                src={images[activeImageIndex]?.url}
-                alt={`${property.title} view ${activeImageIndex + 1}`}
-                initial={{ opacity: 0.4 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0.4 }}
-                transition={{ duration: 0.2 }}
-                className="w-full h-full object-cover"
-              />
+              {(() => {
+                const active = images[activeImageIndex] || {};
+                const url = active.url || '';
+                const isVideo = active.mediaType === 'video' || url.endsWith('.mp4') || url.endsWith('.webm') || url.includes('/video/');
+                return isVideo ? (
+                  <motion.video
+                    key={activeImageIndex}
+                    src={url}
+                    muted
+                    loop
+                    autoPlay
+                    playsInline
+                    initial={{ opacity: 0.4 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0.4 }}
+                    transition={{ duration: 0.2 }}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <motion.img
+                    key={activeImageIndex}
+                    src={url}
+                    alt={`${localized.title} - ${activeImageIndex + 1}`}
+                    initial={{ opacity: 0.4 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0.4 }}
+                    transition={{ duration: 0.2 }}
+                    className="w-full h-full object-cover"
+                  />
+                );
+              })()}
             </AnimatePresence>
 
             {/* Prev / Next Arrows */}
             {images.length > 1 && (
               <>
                 <button
-                  onClick={prevImage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-stone-900/60 hover:bg-stone-900/90 text-white backdrop-blur-md transition-all"
-                  aria-label="Previous photo"
+                  onClick={isRtl ? nextImage : prevImage}
+                  className={`absolute ${isRtl ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 p-2 rounded-full bg-stone-900/60 hover:bg-stone-900/90 text-white backdrop-blur-md transition-all cursor-pointer`}
+                  aria-label={t('modal.prevPhoto')}
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className={`w-5 h-5 ${isRtl ? 'rotate-180' : ''}`} />
                 </button>
                 <button
-                  onClick={nextImage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-stone-900/60 hover:bg-stone-900/90 text-white backdrop-blur-md transition-all"
-                  aria-label="Next photo"
+                  onClick={isRtl ? prevImage : nextImage}
+                  className={`absolute ${isRtl ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 p-2 rounded-full bg-stone-900/60 hover:bg-stone-900/90 text-white backdrop-blur-md transition-all cursor-pointer`}
+                  aria-label={t('modal.nextPhoto')}
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className={`w-5 h-5 ${isRtl ? 'rotate-180' : ''}`} />
                 </button>
               </>
             )}
 
             {/* Photo Counter */}
-            <div className="absolute bottom-4 right-4 px-3 py-1 rounded-full bg-stone-950/75 backdrop-blur-md text-white text-xs font-mono">
+            <div className={`absolute bottom-4 ${isRtl ? 'left-4' : 'right-4'} px-3 py-1 rounded-full bg-stone-950/75 backdrop-blur-md text-white text-xs font-mono`}>
               {activeImageIndex + 1} / {images.length}
             </div>
 
             {/* Purpose Tag */}
-            <div className="absolute bottom-4 left-4 flex gap-2">
-              <span className="px-3 py-1 rounded-full bg-white/95 backdrop-blur-md text-[#1b2622] text-xs font-bold uppercase tracking-wider">
-                {property.purpose === 'RENT' ? 'For Rent' : 'For Sale'}
+            <div className={`absolute bottom-4 ${isRtl ? 'right-4' : 'left-4'} flex gap-2`}>
+              <span className="px-3 py-1 rounded-full bg-white/95 backdrop-blur-md text-[#1b2622] text-xs font-bold tracking-wider">
+                {property.purpose === 'RENT' ? t('card.forRent') : t('card.forSale')}
               </span>
-              <span className="px-3 py-1 rounded-full bg-[#bd6b46] text-white text-xs font-bold uppercase tracking-wider">
-                {property.type}
+              <span className="px-3 py-1 rounded-full bg-[#bd6b46] text-white text-xs font-bold tracking-wider">
+                {localized.displayType}
               </span>
             </div>
           </div>
@@ -144,8 +166,8 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
                 <button
                   key={img.id || idx}
                   onClick={() => setActiveImageIndex(idx)}
-                  className={`relative flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${
-                    activeImageIndex === idx ? 'border-[#bd6b46] scale-105 shadow-sm' : 'border-transparent opacity-60 hover:opacity-100'
+                  className={`relative flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
+                    activeImageIndex === idx ? 'border-[#bd6b46] scale-105 shadow-xs' : 'border-transparent opacity-60 hover:opacity-100'
                   }`}
                 >
                   <img src={img.url} alt="thumbnail" className="w-full h-full object-cover" />
@@ -163,20 +185,20 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
                 
                 {/* Heading & Location */}
                 <div>
-                  <div className="flex items-center gap-2 text-xs font-semibold text-[#bd6b46] uppercase tracking-wider mb-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#bd6b46] tracking-wider mb-2">
                     <MapPin className="w-4 h-4" />
-                    <span>{property.location || property.city}, Morocco</span>
+                    <span>{localized.location || localized.displayCity}, {isRtl ? 'المغرب' : 'Maroc'}</span>
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#1b2622] leading-tight">
-                    {property.title}
+                    {localized.title}
                   </h1>
                 </div>
 
                 {/* Primary Stats Grid */}
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-white border border-[#e5e0d8] text-xs font-medium">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-white border border-[#e5e0d8] text-xs font-medium">
                   {property.bedrooms !== null && (
                     <div className="flex flex-col gap-1">
-                      <span className="text-stone-400 font-normal">Bedrooms</span>
+                      <span className="text-stone-400 font-normal">{t('modal.bedrooms')}</span>
                       <strong className="text-sm font-semibold text-[#1b2622] flex items-center gap-1.5">
                         <BedDouble className="w-4 h-4 text-[#bd6b46]" /> {property.bedrooms}
                       </strong>
@@ -184,7 +206,7 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
                   )}
                   {property.bathrooms !== null && (
                     <div className="flex flex-col gap-1">
-                      <span className="text-stone-400 font-normal">Bathrooms</span>
+                      <span className="text-stone-400 font-normal">{t('modal.bathrooms')}</span>
                       <strong className="text-sm font-semibold text-[#1b2622] flex items-center gap-1.5">
                         <Bath className="w-4 h-4 text-[#bd6b46]" /> {property.bathrooms}
                       </strong>
@@ -192,17 +214,17 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
                   )}
                   {property.surface !== null && (
                     <div className="flex flex-col gap-1">
-                      <span className="text-stone-400 font-normal">Living Space</span>
+                      <span className="text-stone-400 font-normal">{t('modal.livingSpace')}</span>
                       <strong className="text-sm font-semibold text-[#1b2622] flex items-center gap-1.5">
-                        <Maximize2 className="w-4 h-4 text-[#bd6b46]" /> {property.surface} m²
+                        <Maximize2 className="w-4 h-4 text-[#bd6b46]" /> {property.surface} {t('card.surfaceUnit')}
                       </strong>
                     </div>
                   )}
                   {property.condition && (
                     <div className="flex flex-col gap-1">
-                      <span className="text-stone-400 font-normal">Condition</span>
+                      <span className="text-stone-400 font-normal">{t('modal.condition')}</span>
                       <strong className="text-sm font-semibold text-[#1b2622] flex items-center gap-1.5">
-                        <Sparkles className="w-4 h-4 text-[#bd6b46]" /> {property.condition}
+                        <Sparkles className="w-4 h-4 text-[#bd6b46]" /> {localized.displayCondition}
                       </strong>
                     </div>
                   )}
@@ -210,22 +232,22 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
 
                 {/* Narrative Description */}
                 <div>
-                  <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2.5">
-                    About this residence
+                  <h3 className="text-xs font-bold text-stone-400 tracking-wider mb-2.5">
+                    {t('modal.aboutResidence')}
                   </h3>
                   <p className="text-sm text-stone-700 leading-relaxed font-normal whitespace-pre-line">
-                    {property.description}
+                    {localized.description}
                   </p>
                 </div>
 
                 {/* Amenities */}
-                {property.amenities && property.amenities.length > 0 && (
+                {localized.displayAmenities && localized.displayAmenities.length > 0 && (
                   <div>
-                    <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3">
-                      Features & Amenities
+                    <h3 className="text-xs font-bold text-stone-400 tracking-wider mb-3">
+                      {t('modal.featuresAmenities')}
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {property.amenities.map((item) => (
+                      {localized.displayAmenities.map((item) => (
                         <span
                           key={item}
                           className="px-3 py-1.5 rounded-xl bg-white border border-[#ded7cb] text-xs font-medium text-stone-700 flex items-center gap-1.5 shadow-2xs"
@@ -238,26 +260,63 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
                   </div>
                 )}
 
+                {/* Instagram Reel Video Tour */}
+                {property.instagramVideoUrl && (
+                  <div>
+                    <h3 className="text-xs font-bold text-stone-400 tracking-wider mb-3">
+                      {t('modal.videoTourTitle')}
+                    </h3>
+                    <a
+                      href={property.instagramVideoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group relative flex items-center justify-center w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[#1b1b1b] border border-[#ded7cb] shadow-xs hover:shadow-md transition-shadow"
+                      aria-label={t('modal.watchOnInstagram')}
+                    >
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#833ab4]/60 via-[#fd1d1d]/50 to-[#fcb045]/60 group-hover:opacity-90 transition-opacity" />
+
+                      {/* Play circle */}
+                      <div className="relative z-10 flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200">
+                          {/* Instagram logo */}
+                          <svg viewBox="0 0 24 24" className="w-8 h-8 fill-[#E1306C]" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                          </svg>
+                        </div>
+                        <span className="text-white text-xs font-bold tracking-wide drop-shadow-md">
+                          {t('modal.watchOnInstagram')}
+                        </span>
+                      </div>
+
+                      {/* Corner badge */}
+                      <div className="absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-bold text-[#E1306C] tracking-wider">
+                        REEL
+                      </div>
+                    </a>
+                  </div>
+                )}
+
               </div>
 
               {/* Sidebar Action Column */}
               <div className="lg:col-span-4 flex flex-col gap-5">
                 
                 {/* Pricing & Offer Box */}
-                <div className="bg-white p-5 rounded-2xl border border-[#ded7cb] shadow-sm flex flex-col gap-4">
+                <div className="bg-white p-5 rounded-2xl border border-[#ded7cb] shadow-xs flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider block">
-                        Listing Price
+                      <span className="text-[10px] font-semibold text-stone-400 tracking-wider block">
+                        {t('modal.listingPrice')}
                       </span>
                       <strong className="text-2xl font-mono font-bold text-[#1b2622]">
-                        {formattedPrice}
+                        {localized.displayPrice}
                       </strong>
                     </div>
 
                     <button
                       onClick={() => onToggleSave(property.id)}
-                      className={`p-2.5 rounded-full border transition-all ${
+                      className={`p-2.5 rounded-full border transition-all cursor-pointer ${
                         isSaved
                           ? 'bg-rose-50 border-rose-200 text-[#bd6b46]'
                           : 'border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-stone-50'
@@ -271,13 +330,13 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
                   {/* Make Offer Button */}
                   <button
                     onClick={() => onOpenOffer(property)}
-                    className="w-full py-3 px-4 rounded-xl bg-[#bd6b46] hover:bg-[#a65d3c] text-white text-xs font-bold tracking-wider uppercase transition-all shadow-sm active:scale-[0.99]"
+                    className="w-full py-3 px-4 rounded-xl bg-[#bd6b46] hover:bg-[#a65d3c] text-white text-xs font-bold tracking-wider transition-all shadow-xs active:scale-[0.99] cursor-pointer"
                   >
-                    Make an offer
+                    {t('modal.makeOffer')}
                   </button>
 
-                  <div className="text-[11px] text-stone-400 text-center">
-                    Offers submitted are non-binding until agreed with the owner.
+                  <div className="text-[11px] text-stone-400 text-center leading-relaxed">
+                    {t('modal.nonBindingNotice')}
                   </div>
                 </div>
 
@@ -289,10 +348,10 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-[#1b2622]">
-                        {property.seller?.name || 'Verified Owner'}
+                        {property.seller?.name || t('modal.verifiedOwner')}
                       </h4>
                       <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-medium">
-                        <ShieldCheck className="w-3 h-3" /> Identity Verified
+                        <ShieldCheck className="w-3 h-3" /> {t('modal.identityVerified')}
                       </div>
                     </div>
                   </div>
@@ -300,24 +359,24 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
                   {inquirySent ? (
                     <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
                       <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                      <span>Message received. The owner has been notified.</span>
+                      <span>{t('modal.inquirySentSuccess')}</span>
                     </div>
                   ) : (
                     <form onSubmit={handleSendInquiry} className="flex flex-col gap-2">
                       <textarea
                         value={inquiryMessage}
                         onChange={(e) => setInquiryMessage(e.target.value)}
-                        placeholder="Ask the owner about visiting dates, furniture, or conditions..."
+                        placeholder={t('modal.inquiryPlaceholder')}
                         rows={3}
                         className="w-full p-2.5 bg-white border border-[#ded7cb] rounded-xl text-xs text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-[#bd6b46] resize-none"
                       />
                       <button
                         type="submit"
                         disabled={inquirySending || !inquiryMessage.trim()}
-                        className="py-2.5 px-3 rounded-xl bg-[#1b2622] hover:bg-[#293833] disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+                        className="py-2.5 px-3 rounded-xl bg-[#1b2622] hover:bg-[#293833] disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                       >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>{inquirySending ? 'Sending…' : 'Send direct inquiry'}</span>
+                        <Send className={`w-3.5 h-3.5 ${isRtl ? 'scale-x-[-1]' : ''}`} />
+                        <span>{inquirySending ? t('modal.sendingInquiry') : t('modal.sendInquiry')}</span>
                       </button>
                     </form>
                   )}
@@ -333,3 +392,5 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
     </div>
   );
 }
+
+export default PropertyDetailModal;

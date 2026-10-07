@@ -387,7 +387,8 @@ app.post('/api/listings', requireAuth, async (req, res, next) => {
       condition,
       furnished,
       amenities = [],
-      images = []
+      images = [],
+      instagramVideoUrl
     } = req.body || {};
 
     if (!title || !description || !price || !purpose || !type || !city) {
@@ -415,6 +416,7 @@ app.post('/api/listings', requireAuth, async (req, res, next) => {
           condition: condition || 'Good',
           furnished: Boolean(furnished),
           amenities: Array.isArray(amenities) ? amenities : [],
+          instagramVideoUrl: instagramVideoUrl || null,
           status: 'PUBLISHED',
           sellerId: req.user.id,
           images: {
@@ -744,6 +746,109 @@ app.post('/api/listings/:id/inquire', requireAuth, async (req, res, next) => {
   } catch (error) {
     return next(error);
   }
+});
+
+// ─── ADMIN MIDDLEWARE ────────────────────────────────────────────────────────
+const requireAdmin = async (req, res, next) => {
+  try {
+    const user = await authUser(req);
+    if (!user) return res.status(401).json({ error: 'Authentication required.' });
+    if (user.role !== 'ADMIN') return res.status(403).json({ error: 'Admin access required.' });
+    req.user = user;
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// ─── ADMIN ROUTES ─────────────────────────────────────────────────────────────
+// All routes under /api/admin require ADMIN role.
+// These are the ONLY routes that expose owner/buyer contact details.
+
+app.get('/api/admin/stats', requireAdmin, async (_req, res, next) => {
+  try {
+    const stats = store.getAdminStats();
+    return res.json({ data: stats });
+  } catch (error) { return next(error); }
+});
+
+app.get('/api/admin/listings', requireAdmin, async (_req, res, next) => {
+  try {
+    const listings = store.getAllListingsAdmin();
+    return res.json({ data: listings });
+  } catch (error) { return next(error); }
+});
+
+app.patch('/api/admin/listings/:id/status', requireAdmin, async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const listing = store.adminUpdateListingStatus(req.params.id, status);
+    if (!listing) return res.status(404).json({ error: 'Listing not found.' });
+    return res.json({ data: listing });
+  } catch (error) { return next(error); }
+});
+
+app.patch('/api/admin/listings/:id/featured', requireAdmin, async (req, res, next) => {
+  try {
+    const listing = store.adminToggleListingFeatured(req.params.id);
+    if (!listing) return res.status(404).json({ error: 'Listing not found.' });
+    return res.json({ data: listing });
+  } catch (error) { return next(error); }
+});
+
+app.get('/api/admin/requests', requireAdmin, async (_req, res, next) => {
+  try {
+    const requests = store.getAllRequestsAdmin();
+    return res.json({ data: requests });
+  } catch (error) { return next(error); }
+});
+
+app.patch('/api/admin/requests/:id/status', requireAdmin, async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const request = store.adminUpdateRequestStatus(req.params.id, status);
+    if (!request) return res.status(404).json({ error: 'Request not found.' });
+    return res.json({ data: request });
+  } catch (error) { return next(error); }
+});
+
+app.get('/api/admin/offers', requireAdmin, async (_req, res, next) => {
+  try {
+    const offers = store.getAllOffersAdmin();
+    return res.json({ data: offers });
+  } catch (error) { return next(error); }
+});
+
+app.patch('/api/admin/offers/:id/status', requireAdmin, async (req, res, next) => {
+  try {
+    const { status, adminNote } = req.body;
+    const offer = store.adminUpdateOfferStatus(req.params.id, status, adminNote);
+    if (!offer) return res.status(404).json({ error: 'Offer not found.' });
+    return res.json({ data: offer });
+  } catch (error) { return next(error); }
+});
+
+app.get('/api/admin/contacts', requireAdmin, async (_req, res, next) => {
+  try {
+    const contacts = store.getAllContactsAdmin();
+    return res.json({ data: contacts });
+  } catch (error) { return next(error); }
+});
+
+app.patch('/api/admin/contacts/:id/status', requireAdmin, async (req, res, next) => {
+  try {
+    const { status, adminNote } = req.body;
+    const contact = store.adminUpdateContactStatus(req.params.id, status, adminNote);
+    if (!contact) return res.status(404).json({ error: 'Contact not found.' });
+    return res.json({ data: contact });
+  } catch (error) { return next(error); }
+});
+
+app.get('/api/admin/users', requireAdmin, async (_req, res, next) => {
+  try {
+    const users = store.getAllUsersAdmin();
+    return res.json({ data: users });
+  } catch (error) { return next(error); }
 });
 
 // Error handling middleware

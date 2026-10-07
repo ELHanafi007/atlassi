@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Heart, User, LogOut, FileText, Home, ChevronDown, Menu, X, CheckCircle } from 'lucide-react';
+import { Plus, Heart, User, LogOut, FileText, ChevronDown, Menu, X, CheckCircle } from 'lucide-react';
+import { useLanguage } from '../lib/i18n';
+import { LanguageToggle } from './LanguageToggle';
 
 export function Navbar({
   currentUser,
@@ -12,6 +14,7 @@ export function Navbar({
   onShowFavoritesOnly,
   isFavoritesFilterActive
 }) {
+  const { t, isRtl } = useLanguage();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -35,10 +38,10 @@ export function Navbar({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#f9f8f5]/90 backdrop-blur-md border-b border-[#e5e0d8] transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+    <header className="sticky top-0 z-40 w-full bg-[#f9f8f5]/92 backdrop-blur-md border-b border-[#e5e0d8] transition-colors">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
         {/* Brand */}
-        <a href="#top" className="flex items-center gap-1.5 group select-none text-decoration-none">
+        <a href="#top" className="flex items-center gap-1.5 group select-none text-decoration-none flex-shrink-0">
           <span className="text-2xl font-bold tracking-tighter text-[#1b2622] font-serif transition-colors group-hover:text-[#bd6b46]">
             atlassi
           </span>
@@ -46,51 +49,55 @@ export function Navbar({
         </a>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium tracking-wide text-[#59645f]">
+        <nav className="hidden lg:flex items-center gap-7 text-[13px] font-medium tracking-wide text-[#59645f]">
           <button
             onClick={() => { onFilterByPurpose('ALL'); scrollTo('discover'); }}
-            className="hover:text-[#1b2622] transition-colors"
+            className="hover:text-[#1b2622] transition-colors cursor-pointer"
           >
-            All homes
+            {t('nav.allHomes')}
           </button>
           <button
             onClick={() => { onFilterByPurpose('SALE'); scrollTo('discover'); }}
-            className="hover:text-[#1b2622] transition-colors"
+            className="hover:text-[#1b2622] transition-colors cursor-pointer"
           >
-            Buy
+            {t('nav.buy')}
           </button>
           <button
             onClick={() => { onFilterByPurpose('RENT'); scrollTo('discover'); }}
-            className="hover:text-[#1b2622] transition-colors"
+            className="hover:text-[#1b2622] transition-colors cursor-pointer"
           >
-            Rent
+            {t('nav.rent')}
           </button>
           <button
             onClick={() => scrollTo('requests')}
-            className="hover:text-[#1b2622] transition-colors"
+            className="hover:text-[#1b2622] transition-colors cursor-pointer"
           >
-            Client Requests
+            {t('nav.clientRequests')}
           </button>
           <button
             onClick={() => scrollTo('about')}
-            className="hover:text-[#1b2622] transition-colors"
+            className="hover:text-[#1b2622] transition-colors cursor-pointer"
           >
-            Philosophy
+            {t('nav.philosophy')}
           </button>
         </nav>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2.5 sm:gap-3.5">
+          
+          {/* Beautiful Language Toggle (Arabic / French) */}
+          <LanguageToggle className="hidden sm:inline-flex" />
+
           {/* Saved Homes Button */}
           <button
             onClick={onShowFavoritesOnly}
-            className={`relative p-2.5 rounded-full border transition-all duration-200 flex items-center gap-1.5 text-xs font-semibold ${
+            className={`relative p-2.5 rounded-full border transition-all duration-200 flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${
               isFavoritesFilterActive
                 ? 'bg-[#1b2622] text-[#f9f8f5] border-[#1b2622]'
-                : 'bg-white/80 text-[#30403a] border-[#e5e0d8] hover:border-[#1b2622]'
+                : 'bg-white/85 text-[#30403a] border-[#e5e0d8] hover:border-[#1b2622]'
             }`}
-            aria-label="View saved listings"
-            title="Saved homes"
+            aria-label={t('nav.savedHomes')}
+            title={t('nav.savedHomes')}
           >
             <Heart className={`w-4 h-4 ${savedCount > 0 ? 'fill-[#bd6b46] text-[#bd6b46]' : ''}`} />
             {savedCount > 0 && (
@@ -103,10 +110,10 @@ export function Navbar({
           {/* Post Property CTA */}
           <button
             onClick={onOpenCreateListing}
-            className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold tracking-wide bg-white text-[#1b2622] border border-[#d6cfc4] hover:border-[#1b2622] hover:bg-[#f2efe9] shadow-sm transition-all duration-200"
+            className="hidden md:inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold tracking-wide bg-white text-[#1b2622] border border-[#d6cfc4] hover:border-[#1b2622] hover:bg-[#f2efe9] shadow-2xs transition-all duration-200 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-[#bd6b46]" />
-            Post a property
+            <span>{t('nav.postProperty')}</span>
           </button>
 
           {/* User Account / Login */}
@@ -114,12 +121,12 @@ export function Navbar({
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-[#1b2622] text-[#f9f8f5] text-xs font-medium hover:bg-[#283631] transition-colors shadow-sm"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1b2622] text-[#f9f8f5] text-xs font-medium hover:bg-[#283631] transition-colors shadow-2xs cursor-pointer"
               >
                 <div className="w-6 h-6 rounded-full bg-[#bd6b46] text-white flex items-center justify-center font-bold text-[11px]">
                   {currentUser.name.charAt(0).toUpperCase()}
                 </div>
-                <span className="max-w-[100px] truncate">{currentUser.name}</span>
+                <span className="max-w-[90px] truncate">{currentUser.name}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-stone-300" />
               </button>
 
@@ -130,14 +137,16 @@ export function Navbar({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.95 }}
                     transition={{ duration: 0.16 }}
-                    className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-[#e5e0d8] py-2 z-50 text-stone-800"
+                    className={`absolute mt-2 w-56 bg-white rounded-2xl shadow-xl border border-[#e5e0d8] py-2 z-50 text-stone-800 ${
+                      isRtl ? 'left-0' : 'right-0'
+                    }`}
                   >
                     <div className="px-4 py-2.5 border-b border-stone-100">
                       <p className="text-xs font-semibold text-stone-900 truncate">{currentUser.name}</p>
                       <p className="text-[11px] text-stone-500 truncate">{currentUser.email}</p>
                       {currentUser.phoneVerified && (
                         <div className="flex items-center gap-1 text-[10px] text-emerald-600 mt-1 font-medium">
-                          <CheckCircle className="w-3 h-3" /> Phone Verified
+                          <CheckCircle className="w-3 h-3" /> {t('nav.phoneVerified')}
                         </div>
                       )}
                     </div>
@@ -148,18 +157,18 @@ export function Navbar({
                           setUserDropdownOpen(false);
                           onOpenCreateListing();
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-[#f6f4ee] flex items-center gap-2.5 text-stone-700"
+                        className="w-full text-start px-4 py-2 hover:bg-[#f6f4ee] flex items-center gap-2.5 text-stone-700 cursor-pointer"
                       >
-                        <Plus className="w-3.5 h-3.5 text-[#bd6b46]" /> Post New Property
+                        <Plus className="w-3.5 h-3.5 text-[#bd6b46]" /> {t('nav.postNewProperty')}
                       </button>
                       <button
                         onClick={() => {
                           setUserDropdownOpen(false);
                           scrollTo('requests');
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-[#f6f4ee] flex items-center gap-2.5 text-stone-700"
+                        className="w-full text-start px-4 py-2 hover:bg-[#f6f4ee] flex items-center gap-2.5 text-stone-700 cursor-pointer"
                       >
-                        <FileText className="w-3.5 h-3.5 text-stone-500" /> Buyer/Renter Requests
+                        <FileText className="w-3.5 h-3.5 text-stone-500" /> {t('nav.buyerRenterRequests')}
                       </button>
                     </div>
 
@@ -169,9 +178,9 @@ export function Navbar({
                           setUserDropdownOpen(false);
                           onLogout();
                         }}
-                        className="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 font-medium"
+                        className="w-full text-start px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 font-medium cursor-pointer"
                       >
-                        <LogOut className="w-3.5 h-3.5" /> Sign out
+                        <LogOut className="w-3.5 h-3.5" /> {t('nav.signOut')}
                       </button>
                     </div>
                   </motion.div>
@@ -181,17 +190,17 @@ export function Navbar({
           ) : (
             <button
               onClick={onOpenAuth}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-[#1b2622] text-[#f9f8f5] hover:bg-[#283631] transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full text-xs font-semibold bg-[#1b2622] text-[#f9f8f5] hover:bg-[#283631] transition-all shadow-2xs cursor-pointer"
             >
               <User className="w-3.5 h-3.5" />
-              Sign in
+              <span>{t('nav.signIn')}</span>
             </button>
           )}
 
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg text-stone-700 hover:bg-[#eeebe3] transition-colors"
+            className="lg:hidden p-2 rounded-lg text-stone-700 hover:bg-[#eeebe3] transition-colors cursor-pointer"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -207,40 +216,52 @@ export function Navbar({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="md:hidden border-t border-[#e5e0d8] bg-[#f9f8f5] px-6 py-5 flex flex-col gap-4 text-sm font-medium"
+            className="lg:hidden border-t border-[#e5e0d8] bg-[#f9f8f5] px-6 py-5 flex flex-col gap-4 text-sm font-medium"
           >
+            {/* Mobile Language Selector */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#e5e0d8]">
+              <span className="text-xs font-semibold text-stone-500">{t('nav.language')}</span>
+              <LanguageToggle />
+            </div>
+
             <button
               onClick={() => { onFilterByPurpose('ALL'); scrollTo('discover'); }}
-              className="text-left py-1 text-stone-700 hover:text-[#bd6b46]"
+              className="text-start py-1 text-stone-700 hover:text-[#bd6b46] cursor-pointer"
             >
-              All Moroccan Homes
+              {t('nav.allMoroccanHomes')}
             </button>
             <button
               onClick={() => { onFilterByPurpose('SALE'); scrollTo('discover'); }}
-              className="text-left py-1 text-stone-700 hover:text-[#bd6b46]"
+              className="text-start py-1 text-stone-700 hover:text-[#bd6b46] cursor-pointer"
             >
-              Properties for Sale
+              {t('nav.propertiesForSale')}
             </button>
             <button
               onClick={() => { onFilterByPurpose('RENT'); scrollTo('discover'); }}
-              className="text-left py-1 text-stone-700 hover:text-[#bd6b46]"
+              className="text-start py-1 text-stone-700 hover:text-[#bd6b46] cursor-pointer"
             >
-              Properties for Rent
+              {t('nav.propertiesForRent')}
             </button>
             <button
               onClick={() => scrollTo('requests')}
-              className="text-left py-1 text-stone-700 hover:text-[#bd6b46]"
+              className="text-start py-1 text-stone-700 hover:text-[#bd6b46] cursor-pointer"
             >
-              Client Requests
+              {t('nav.clientRequests')}
+            </button>
+            <button
+              onClick={() => scrollTo('about')}
+              className="text-start py-1 text-stone-700 hover:text-[#bd6b46] cursor-pointer"
+            >
+              {t('nav.philosophy')}
             </button>
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
                 onOpenCreateListing();
               }}
-              className="text-left py-2 text-[#bd6b46] font-semibold flex items-center gap-2 border-t border-[#e5e0d8] pt-3"
+              className="text-start py-2 text-[#bd6b46] font-semibold flex items-center gap-2 border-t border-[#e5e0d8] pt-3 cursor-pointer"
             >
-              <Plus className="w-4 h-4" /> Post a property
+              <Plus className="w-4 h-4" /> {t('nav.postProperty')}
             </button>
           </motion.div>
         )}
@@ -248,3 +269,5 @@ export function Navbar({
     </header>
   );
 }
+
+export default Navbar;

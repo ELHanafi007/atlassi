@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, ArrowUpRight, AlertCircle, Shield, Check, User, Mail, Lock, Phone } from 'lucide-react';
+import { X, ArrowUpRight, AlertCircle, User, Mail, Lock, Phone } from 'lucide-react';
 import { auth } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 
 export function AuthModal({ onClose, onAuthSuccess, onShowToast }) {
+  const { t, isRtl } = useLanguage();
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,11 +30,11 @@ export function AuthModal({ onClose, onAuthSuccess, onShowToast }) {
         const result = await auth.login({ email, password });
         localStorage.setItem('atlassi-token', result.data.token);
         onAuthSuccess(result.data.user);
-        onShowToast({ type: 'success', message: `Welcome back, ${result.data.user.name}!` });
+        onShowToast({ type: 'success', message: t('toasts.welcomeBackUser', result.data.user.name) });
         onClose();
       } else {
         if (password !== passwordConfirmation) {
-          throw new Error('Passwords do not match.');
+          throw new Error(isRtl ? 'كلمتا المرور غير متطابقتين.' : 'Les mots de passe ne correspondent pas.');
         }
         const result = await auth.register({
           name,
@@ -43,11 +45,11 @@ export function AuthModal({ onClose, onAuthSuccess, onShowToast }) {
         });
         localStorage.setItem('atlassi-token', result.data.token);
         onAuthSuccess(result.data.user);
-        onShowToast({ type: 'success', message: `Account created! Welcome to Atlassi, ${result.data.user.name}.` });
+        onShowToast({ type: 'success', message: t('toasts.accountCreatedUser', result.data.user.name) });
         onClose();
       }
     } catch (err) {
-      setError(err.message || 'Authentication failed. Please verify credentials.');
+      setError(err.message || (isRtl ? 'فشل التحقق من الهوية. يرجى التأكد من البيانات.' : "Échec de l'authentification. Veuillez vérifier vos identifiants."));
     } finally {
       setLoading(false);
     }
@@ -69,8 +71,8 @@ export function AuthModal({ onClose, onAuthSuccess, onShowToast }) {
       >
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full text-stone-500 hover:text-stone-800 hover:bg-stone-200 transition-colors"
-          aria-label="Close"
+          className={`absolute top-5 ${isRtl ? 'left-5' : 'right-5'} p-2 rounded-full text-stone-500 hover:text-stone-800 hover:bg-stone-200 transition-colors cursor-pointer`}
+          aria-label={t('modal.close')}
         >
           <X className="w-5 h-5" />
         </button>
@@ -80,32 +82,30 @@ export function AuthModal({ onClose, onAuthSuccess, onShowToast }) {
           <button
             type="button"
             onClick={() => { setMode('login'); setError(''); }}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
-              mode === 'login' ? 'bg-white text-[#1b2622] shadow-xs' : 'text-stone-600 hover:text-stone-900'
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+              mode === 'login' ? 'bg-white text-[#1b2622] shadow-2xs' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
-            Sign in
+            {t('auth.signInTab')}
           </button>
           <button
             type="button"
             onClick={() => { setMode('register'); setError(''); }}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
-              mode === 'register' ? 'bg-white text-[#1b2622] shadow-xs' : 'text-stone-600 hover:text-stone-900'
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+              mode === 'register' ? 'bg-white text-[#1b2622] shadow-2xs' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
-            Create account
+            {t('auth.registerTab')}
           </button>
         </div>
 
         {/* Header */}
         <div className="mb-5">
           <h2 className="text-2xl font-serif font-bold text-[#1b2622]">
-            {mode === 'login' ? 'Welcome Back' : 'Join Atlassi'}
+            {mode === 'login' ? t('auth.welcomeBackTitle') : t('auth.joinTitle')}
           </h2>
           <p className="text-xs text-stone-500 mt-1">
-            {mode === 'login'
-              ? 'Sign in to access your saved homes, submit offers, and message owners.'
-              : 'Create an account to post properties and save your favourite Moroccan homes.'}
+            {mode === 'login' ? t('auth.signInDesc') : t('auth.registerDesc')}
           </p>
         </div>
 
@@ -120,53 +120,59 @@ export function AuthModal({ onClose, onAuthSuccess, onShowToast }) {
           {mode === 'register' && (
             <>
               <div>
-                <label className="block font-semibold text-stone-700 mb-1">Full Name</label>
+                <label className="block font-semibold text-stone-700 mb-1">{t('auth.fullNameLabel')}</label>
                 <div className="relative">
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Youssef El Amrani"
-                    className="w-full bg-white border border-[#ded7cb] rounded-xl pl-9 pr-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#bd6b46]"
+                    placeholder={t('auth.fullNamePlaceholder')}
+                    className={`w-full bg-white border border-[#ded7cb] rounded-xl ${
+                      isRtl ? 'pr-9 pl-3.5' : 'pl-9 pr-3.5'
+                    } py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#bd6b46]`}
                   />
-                  <User className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <User className={`w-4 h-4 text-stone-400 absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2`} />
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-stone-700 mb-1">Phone Number (Morocco)</label>
+                <label className="block font-semibold text-stone-700 mb-1">{t('auth.phoneLabel')}</label>
                 <div className="relative">
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+212 661 000 000"
-                    className="w-full bg-white border border-[#ded7cb] rounded-xl pl-9 pr-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#bd6b46]"
+                    placeholder={t('auth.phonePlaceholder')}
+                    className={`w-full bg-white border border-[#ded7cb] rounded-xl ${
+                      isRtl ? 'pr-9 pl-3.5' : 'pl-9 pr-3.5'
+                    } py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#bd6b46]`}
                   />
-                  <Phone className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Phone className={`w-4 h-4 text-stone-400 absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2`} />
                 </div>
               </div>
             </>
           )}
 
           <div>
-            <label className="block font-semibold text-stone-700 mb-1">Email Address</label>
+            <label className="block font-semibold text-stone-700 mb-1">{t('auth.emailLabel')}</label>
             <div className="relative">
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@domain.ma"
-                className="w-full bg-white border border-[#ded7cb] rounded-xl pl-9 pr-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#bd6b46]"
+                placeholder={t('auth.emailPlaceholder')}
+                className={`w-full bg-white border border-[#ded7cb] rounded-xl ${
+                  isRtl ? 'pr-9 pl-3.5' : 'pl-9 pr-3.5'
+                } py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#bd6b46]`}
               />
-              <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Mail className={`w-4 h-4 text-stone-400 absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2`} />
             </div>
           </div>
 
           <div>
-            <label className="block font-semibold text-stone-700 mb-1">Password</label>
+            <label className="block font-semibold text-stone-700 mb-1">{t('auth.passwordLabel')}</label>
             <div className="relative">
               <input
                 type="password"
@@ -174,15 +180,17 @@ export function AuthModal({ onClose, onAuthSuccess, onShowToast }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-white border border-[#ded7cb] rounded-xl pl-9 pr-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#bd6b46]"
+                className={`w-full bg-white border border-[#ded7cb] rounded-xl ${
+                  isRtl ? 'pr-9 pl-3.5' : 'pl-9 pr-3.5'
+                } py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#bd6b46]`}
               />
-              <Lock className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Lock className={`w-4 h-4 text-stone-400 absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2`} />
             </div>
           </div>
 
           {mode === 'register' && (
             <div>
-              <label className="block font-semibold text-stone-700 mb-1">Confirm Password</label>
+              <label className="block font-semibold text-stone-700 mb-1">{t('auth.confirmPasswordLabel')}</label>
               <div className="relative">
                 <input
                   type="password"
@@ -190,9 +198,11 @@ export function AuthModal({ onClose, onAuthSuccess, onShowToast }) {
                   value={passwordConfirmation}
                   onChange={(e) => setPasswordConfirmation(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-white border border-[#ded7cb] rounded-xl pl-9 pr-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#bd6b46]"
+                  className={`w-full bg-white border border-[#ded7cb] rounded-xl ${
+                    isRtl ? 'pr-9 pl-3.5' : 'pl-9 pr-3.5'
+                  } py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#bd6b46]`}
                 />
-                <Lock className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className={`w-4 h-4 text-stone-400 absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2`} />
               </div>
             </div>
           )}
@@ -200,23 +210,23 @@ export function AuthModal({ onClose, onAuthSuccess, onShowToast }) {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 w-full py-3.5 rounded-xl bg-[#1b2622] hover:bg-[#2a3832] text-white text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 active:scale-[0.99]"
+            className="mt-2 w-full py-3.5 rounded-xl bg-[#1b2622] hover:bg-[#2a3832] text-white text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 active:scale-[0.99] cursor-pointer"
           >
-            <span>{loading ? 'Processing…' : mode === 'login' ? 'Sign In to Atlassi' : 'Create Account'}</span>
-            <ArrowUpRight className="w-4 h-4 text-[#bd6b46]" />
+            <span>{loading ? t('auth.processing') : mode === 'login' ? t('auth.signInSubmit') : t('auth.registerSubmit')}</span>
+            <ArrowUpRight className={`w-4 h-4 text-[#bd6b46] ${isRtl ? 'rotate-[-90deg]' : ''}`} />
           </button>
         </form>
 
         {/* Quick Demo Credentials Helper */}
         {mode === 'login' && (
           <div className="mt-5 pt-4 border-t border-[#ded7cb] flex items-center justify-between text-[11px] text-stone-500">
-            <span>Demo testing account:</span>
+            <span>{t('auth.demoPrompt')}</span>
             <button
               type="button"
               onClick={fillDemoAccount}
-              className="text-[#bd6b46] hover:underline font-semibold"
+              className="text-[#bd6b46] hover:underline font-semibold cursor-pointer"
             >
-              Fill karim@atlassi.ma
+              {t('auth.fillDemoBtn')}
             </button>
           </div>
         )}
@@ -224,3 +234,5 @@ export function AuthModal({ onClose, onAuthSuccess, onShowToast }) {
     </div>
   );
 }
+
+export default AuthModal;
