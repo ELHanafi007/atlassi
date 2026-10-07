@@ -571,7 +571,10 @@ function AdminLogin({ onLogin }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      const j = await r.json();
+      const j = await r.json().catch(async () => {
+        const text = await r.text().catch(() => '');
+        return { error: text || 'Erreur serveur (réponse non-JSON).' };
+      });
       if (!r.ok) { setError(j.error || 'Identifiants incorrects.'); setLoading(false); return; }
       if (j.data?.user?.role !== 'ADMIN') {
         setError('Accès réservé aux administrateurs Atlassi.');
