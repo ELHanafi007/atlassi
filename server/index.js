@@ -4,8 +4,6 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import crypto from 'node:crypto';
-import { PrismaClient } from '@prisma/client';
-import { PrismaNeon } from '@prisma/adapter-neon';
 import { store, verifyPassword } from './dataStore.js';
 
 dotenv.config();
@@ -889,6 +887,8 @@ app.use((error, _req, res, _next) => {
 
 export default app;
 
-app.listen(PORT, () => {
-  console.log(`Atlassi API running on port ${PORT} (${hasDatabase && prisma ? 'database' : 'persistent store'} mode)`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Atlassi API running on port ${PORT} (${hasDatabase ? 'database' : 'persistent store'} mode)`);
+  });
+}
