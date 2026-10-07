@@ -643,6 +643,12 @@ function AdminLogin({ onLogin }) {
             }}>
               {loading ? 'Connexion…' : 'Se connecter'}
             </button>
+            <button type="button" onClick={() => { setEmail('admin@atlassi.ma'); setPassword('atlassi2024'); }} style={{
+              background: 'none', border: '1px dashed #3a3a3d', borderRadius: 8, padding: '8px',
+              color: '#34d399', fontSize: 12, cursor: 'pointer', marginTop: 4
+            }}>
+              Remplir identifiants démo (Admin)
+            </button>
           </div>
           <p style={{ fontSize: 12, color: '#4a4a4a', marginTop: 16, textAlign: 'center' }}>
             Accès réservé à l'équipe Atlassi
