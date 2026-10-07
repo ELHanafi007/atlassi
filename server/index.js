@@ -84,13 +84,18 @@ const publicUser = (user) => ({
 
 const createSession = async (user) => {
   if (hasDatabase && prisma) {
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-    await prisma.session.create({
-      data: { id: crypto.randomUUID(), tokenHash, userId: user.id, expiresAt }
-    });
-    return rawToken;
+    try {
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+      await prisma.session.create({
+        data: { id: crypto.randomUUID(), tokenHash, userId: user.id, expiresAt }
+      });
+      return rawToken;
+    } catch (err) {
+      console.warn('Prisma session creation failed, falling back to dataStore:', err.message);
+      return store.createSession(user.id);
+    }
   }
   return store.createSession(user.id);
 };
@@ -202,11 +207,17 @@ app.post('/api/auth/login', async (req, res, next) => {
     let passwordValid = false;
 
     if (hasDatabase && prisma) {
-      user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-      if (user) {
-        const [salt, storedHash] = user.password.split(':');
-        const computedHash = crypto.scryptSync(password, salt, 64).toString('hex');
-        passwordValid = crypto.timingSafeEqual(Buffer.from(computedHash, 'hex'), Buffer.from(storedHash, 'hex'));
+      try {
+        user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+        if (user) {
+          const [salt, storedHash] = user.password.split(':');
+          const computedHash = crypto.scryptSync(password, salt, 64).toString('hex');
+          passwordValid = crypto.timingSafeEqual(Buffer.from(computedHash, 'hex'), Buffer.from(storedHash, 'hex'));
+        }
+      } catch (dbErr) {
+        console.warn('Prisma query failed, falling back to dataStore:', dbErr.message);
+        user = store.findUserByEmail(normalizedEmail);
+        if (user) passwordValid = verifyPassword(password, user.password);
       }
     } else {
       user = store.findUserByEmail(normalizedEmail);
