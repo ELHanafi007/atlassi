@@ -1,9 +1,36 @@
 import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Building2,
+  ClipboardList,
+  MessageSquareQuote,
+  Mail,
+  Users,
+  Check,
+  X,
+  Star,
+  Phone,
+  Copy,
+  CheckCircle2,
+  LogOut,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  Lock,
+  ExternalLink,
+  ChevronRight,
+  Sparkles,
+  Inbox,
+  UserCheck,
+  AlertCircle
+} from 'lucide-react';
+import { useLanguage } from '../lib/i18n';
+import { LanguageToggle } from './LanguageToggle';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const API = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
 
-/* ─── tiny helpers ─────────────────────────────────────────── */
+/* ─── Helpers ─────────────────────────────────────────── */
 const fmt = (n) =>
   n == null ? '—' : new Intl.NumberFormat('fr-MA').format(n) + ' MAD';
 
@@ -16,160 +43,197 @@ const relDate = (iso) => {
   return `Il y a ${diff} j`;
 };
 
-const Badge = ({ label, color = 'neutral' }) => {
-  const colors = {
-    green: '#1a4731 / #22c55e',
-    red: '#4c1d1d / #f87171',
-    amber: '#422006 / #fbbf24',
-    blue: '#172554 / #60a5fa',
-    neutral: '#1c1c1c / #a3a3a3',
-    purple: '#2e1065 / #c084fc',
+/* ─── Editorial Status Badge ─────────────────────────────────── */
+const Badge = ({ label, variant = 'neutral', icon: Icon }) => {
+  const variants = {
+    green: 'bg-emerald-50 text-emerald-800 border-emerald-200/80',
+    red: 'bg-rose-50 text-rose-800 border-rose-200/80',
+    amber: 'bg-amber-50 text-amber-900 border-amber-200/80',
+    blue: 'bg-sky-50 text-sky-800 border-sky-200/80',
+    purple: 'bg-purple-50 text-purple-900 border-purple-200/80',
+    terracotta: 'bg-[#f5ece6] text-[#bd6b46] border-[#e8d2c4]',
+    neutral: 'bg-[#f0ede6] text-[#55605b] border-[#ded7cb]',
   };
-  const [bg, fg] = (colors[color] || colors.neutral).split(' / ');
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4,
-      padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600,
-      letterSpacing: '.04em', textTransform: 'uppercase',
-      background: bg, color: fg
-    }}>{label}</span>
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wider uppercase border transition-colors ${
+        variants[variant] || variants.neutral
+      }`}
+    >
+      {Icon && <Icon className="w-3 h-3 flex-shrink-0" />}
+      {label}
+    </span>
   );
 };
 
 const statusBadge = (status) => {
   const map = {
-    PUBLISHED: ['Publié', 'green'], PENDING: ['En attente', 'amber'],
-    UNPUBLISHED: ['Retiré', 'red'], SOLD: ['Vendu', 'purple'],
-    ACTIVE: ['Actif', 'green'], CLOSED: ['Fermé', 'red'],
-    ACCEPTED: ['Accepté', 'green'], REJECTED: ['Refusé', 'red'],
-    READ: ['Lu', 'blue'], UNREAD: ['Non lu', 'amber'],
+    PUBLISHED: ['Publié', 'green', CheckCircle2],
+    PENDING: ['En attente', 'amber', RefreshCw],
+    UNPUBLISHED: ['Retiré', 'red', X],
+    SOLD: ['Vendu', 'purple', CheckCircle2],
+    ACTIVE: ['Actif', 'green', Sparkles],
+    CLOSED: ['Fermé', 'red', X],
+    ACCEPTED: ['Accepté', 'green', CheckCircle2],
+    REJECTED: ['Refusé', 'red', X],
+    READ: ['Lu', 'blue', CheckCircle2],
+    UNREAD: ['Non lu', 'amber', AlertCircle],
   };
-  const [label, color] = map[status] || [status, 'neutral'];
-  return <Badge label={label} color={color} />;
+  const [label, variant, Icon] = map[status] || [status, 'neutral', null];
+  return <Badge label={label} variant={variant} icon={Icon} />;
 };
 
-/* ─── contact pill (clickable copy) ───────────────────────── */
-const ContactPill = ({ icon, value, href }) => {
+/* ─── Confidential Contact Pill ───────────────────────── */
+const ContactPill = ({ icon: Icon, value, href, label }) => {
   const [copied, setCopied] = useState(false);
   if (!value) return null;
+
+  const handleCopy = (e) => {
+    if (!href) {
+      e.preventDefault();
+      navigator.clipboard.writeText(value).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1600);
+      });
+    }
+  };
+
   return (
     <a
       href={href || '#'}
-      onClick={href ? undefined : (e) => {
-        e.preventDefault();
-        navigator.clipboard.writeText(value).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        });
-      }}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 5,
-        padding: '3px 10px', borderRadius: 6, fontSize: 12,
-        background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)',
-        color: copied ? '#4ade80' : '#d4d4d4', textDecoration: 'none',
-        transition: 'color .15s',
-        cursor: href ? 'pointer' : 'copy',
-      }}
+      onClick={handleCopy}
+      title={label || value}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+        copied
+          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+          : 'bg-white/80 hover:bg-white text-[#19221f] border border-[#e5e0d8] hover:border-[#bd6b46] shadow-2xs'
+      }`}
     >
-      <span style={{ fontSize: 13 }}>{icon}</span>
-      {copied ? 'Copié !' : value}
+      {Icon && <Icon className={`w-3.5 h-3.5 ${copied ? 'text-emerald-600' : 'text-[#bd6b46]'}`} />}
+      <span>{copied ? 'Copié !' : value}</span>
+      {!href && <Copy className="w-3 h-3 text-[#7d8882] opacity-60 ml-0.5" />}
     </a>
   );
 };
 
-/* ─── stat card ────────────────────────────────────────────── */
-const StatCard = ({ label, value, sub, accent }) => (
-  <div style={{
-    background: '#161618', border: '1px solid #2a2a2d', borderRadius: 12,
-    padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 4
-  }}>
-    <span style={{ fontSize: 12, color: '#737373', letterSpacing: '.06em', textTransform: 'uppercase' }}>{label}</span>
-    <span style={{ fontSize: 32, fontWeight: 700, color: accent || '#e3e2e2', lineHeight: 1.1 }}>{value}</span>
-    {sub && <span style={{ fontSize: 12, color: '#737373' }}>{sub}</span>}
-  </div>
-);
-
-/* ─── section header ───────────────────────────────────────── */
-const SectionTitle = ({ children, count }) => (
-  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 20 }}>
-    <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: '#e3e2e2' }}>{children}</h2>
-    {count != null && (
-      <span style={{ fontSize: 12, color: '#737373' }}>{count} entrée{count !== 1 ? 's' : ''}</span>
-    )}
-  </div>
-);
-
-/* ─── action button ────────────────────────────────────────── */
-const Btn = ({ children, onClick, danger, small, disabled }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    style={{
-      padding: small ? '4px 10px' : '6px 14px',
-      fontSize: small ? 12 : 13, fontWeight: 500, borderRadius: 6,
-      border: danger ? '1px solid #7f1d1d' : '1px solid #3a3a3d',
-      background: danger ? 'rgba(127,29,29,.35)' : 'rgba(255,255,255,.05)',
-      color: danger ? '#f87171' : '#d4d4d4',
-      cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? .5 : 1,
-      transition: 'background .15s',
-    }}
-  >{children}</button>
-);
-
-/* ─── image thumbnail ──────────────────────────────────────── */
-const Thumb = ({ images, size = 52 }) => {
-  const url = images?.[0]?.url;
+/* ─── Confidential Owner/Requester Block ─────────────────────── */
+const ContactBlock = ({ person, label = 'CONTACT CONFIDENTIEL' }) => {
+  if (!person) return null;
   return (
-    <div style={{
-      width: size, height: size, borderRadius: 8, flexShrink: 0,
-      background: '#222', overflow: 'hidden',
-      border: '1px solid #2a2a2d'
-    }}>
-      {url && <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+    <div className="bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl p-3.5 mt-3 shadow-2xs">
+      <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#bd6b46] tracking-wider uppercase mb-2">
+        <Lock className="w-3 h-3" />
+        <span>🔒 {label}</span>
+      </div>
+      <div className="font-semibold text-sm text-[#19221f] mb-2">{person.name}</div>
+      <div className="flex flex-wrap gap-2">
+        <ContactPill icon={Mail} value={person.email} href={`mailto:${person.email}`} label="Envoyer un e-mail" />
+        <ContactPill icon={Phone} value={person.phone} href={`tel:${person.phone}`} label="Appeler" />
+      </div>
     </div>
   );
 };
 
-/* ─── owner / requester contact block ─────────────────────── */
-const ContactBlock = ({ person, label }) => {
-  if (!person) return null;
+/* ─── Stat Card Component ────────────────────────────────────── */
+const StatCard = ({ label, value, sub, accentColor, icon: Icon }) => (
+  <motion.div
+    whileHover={{ y: -2 }}
+    className="bg-white border border-[#e7e2d8] rounded-2xl p-5 shadow-morocco flex flex-col justify-between transition-all"
+  >
+    <div className="flex items-center justify-between mb-3">
+      <span className="text-[11px] font-bold tracking-widest text-[#7d8882] uppercase">{label}</span>
+      <div className={`p-2 rounded-xl ${accentColor}`}>
+        <Icon className="w-4 h-4" />
+      </div>
+    </div>
+    <div>
+      <div className="text-3xl font-bold font-serif text-[#19221f] tabular-nums tracking-tight leading-none mb-1">
+        {value != null ? value : '—'}
+      </div>
+      {sub && <div className="text-xs text-[#55605b] font-medium">{sub}</div>}
+    </div>
+  </motion.div>
+);
+
+/* ─── Section Header ───────────────────────────────────────── */
+const SectionTitle = ({ children, count, action }) => (
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+    <div className="flex items-baseline gap-3">
+      <h2 className="text-xl sm:text-2xl font-bold font-serif text-[#19221f] tracking-tight">{children}</h2>
+      {count != null && (
+        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f0ede6] text-[#55605b] border border-[#ded7cb]">
+          {count} entrée{count !== 1 ? 's' : ''}
+        </span>
+      )}
+    </div>
+    {action}
+  </div>
+);
+
+/* ─── Action Button ────────────────────────────────────────── */
+const Btn = ({ children, onClick, danger, small, disabled, icon: Icon }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={`inline-flex items-center gap-1.5 font-medium rounded-lg transition-all cursor-pointer ${
+      small ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm'
+    } ${
+      danger
+        ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 shadow-2xs'
+        : 'bg-[#19221f] hover:bg-[#2c3a35] text-[#f9f8f5] shadow-xs'
+    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+  >
+    {Icon && <Icon className={small ? 'w-3.5 h-3.5' : 'w-4 h-4'} />}
+    {children}
+  </button>
+);
+
+/* ─── Image Thumbnail ──────────────────────────────────────── */
+const Thumb = ({ images, size = 64 }) => {
+  const url = images?.[0]?.url;
   return (
-    <div style={{
-      background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)',
-      borderRadius: 8, padding: '10px 14px', marginTop: 8
-    }}>
-      <div style={{ fontSize: 11, color: '#34d399', fontWeight: 600, letterSpacing: '.06em', marginBottom: 6 }}>
-        🔒 {label || 'CONTACT PRIVÉ'}
-      </div>
-      <div style={{ fontWeight: 600, fontSize: 14, color: '#e3e2e2', marginBottom: 6 }}>{person.name}</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        <ContactPill icon="✉" value={person.email} href={`mailto:${person.email}`} />
-        <ContactPill icon="📞" value={person.phone} href={`tel:${person.phone}`} />
-      </div>
+    <div
+      style={{ width: size, height: size }}
+      className="rounded-xl flex-shrink-0 bg-[#f0ede6] overflow-hidden border border-[#e5e0d8] relative shadow-2xs"
+    >
+      {url ? (
+        <img src={url} alt="" className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-[#7d8882]">
+          <Building2 className="w-6 h-6 stroke-1" />
+        </div>
+      )}
     </div>
   );
 };
 
 /* ═══════════════════════════════════════════════════════════
-   TAB: Listings
+   TAB: LISTINGS
 ══════════════════════════════════════════════════════════════ */
 function ListingsTab({ token }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const [search, setSearch] = useState('');
 
   const load = useCallback(async () => {
-    const r = await fetch(`${API}/admin/listings`, { headers: { Authorization: `Bearer ${token}` } });
-    const j = await r.json();
-    setData(j.data || []);
-    setLoading(false);
+    try {
+      const r = await fetch(`${API}/admin/listings`, { headers: { Authorization: `Bearer ${token}` } });
+      const j = await r.json();
+      setData(j.data || []);
+    } catch (err) {
+      console.error('Failed to load listings:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
   useEffect(() => { load(); }, [load]);
 
   const setStatus = async (id, status) => {
     await fetch(`${API}/admin/listings/${id}/status`, {
-      method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
     load();
@@ -177,139 +241,264 @@ function ListingsTab({ token }) {
 
   const toggleFeatured = async (id) => {
     await fetch(`${API}/admin/listings/${id}/featured`, {
-      method: 'PATCH', headers: { Authorization: `Bearer ${token}` }
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` }
     });
     load();
   };
 
-  const statuses = ['ALL', 'PUBLISHED', 'PENDING', 'UNPUBLISHED'];
-  const filtered = filter === 'ALL' ? data : data.filter(l => l.status === filter);
+  const statuses = [
+    { id: 'ALL', label: 'Toutes' },
+    { id: 'PUBLISHED', label: 'Publiées' },
+    { id: 'PENDING', label: 'En attente' },
+    { id: 'UNPUBLISHED', label: 'Retirées' },
+  ];
 
-  if (loading) return <p style={{ color: '#737373' }}>Chargement…</p>;
+  const filtered = data.filter(l => {
+    const matchesFilter = filter === 'ALL' || l.status === filter;
+    const matchesSearch = !search ||
+      l.title?.toLowerCase().includes(search.toLowerCase()) ||
+      l.city?.toLowerCase().includes(search.toLowerCase()) ||
+      l.owner?.name?.toLowerCase().includes(search.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-[#55605b] gap-3">
+        <RefreshCw className="w-5 h-5 animate-spin text-[#bd6b46]" />
+        <span>Chargement des annonces…</span>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <SectionTitle count={filtered.length}>Annonces immobilières</SectionTitle>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+      <SectionTitle
+        count={filtered.length}
+        action={
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#7d8882]" />
+            <input
+              type="text"
+              placeholder="Rechercher annonce, ville, nom…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-white border border-[#e7e2d8] rounded-xl text-xs text-[#19221f] placeholder:text-[#7d8882] focus:outline-none focus:border-[#bd6b46]"
+            />
+          </div>
+        }
+      >
+        Annonces immobilières
+      </SectionTitle>
+
+      {/* Filter Tabs */}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-1 custom-scrollbar">
         {statuses.map(s => (
-          <button key={s} onClick={() => setFilter(s)} style={{
-            padding: '5px 14px', borderRadius: 99, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-            border: filter === s ? '1px solid #34d399' : '1px solid #3a3a3d',
-            background: filter === s ? 'rgba(52,211,153,.12)' : 'transparent',
-            color: filter === s ? '#34d399' : '#737373'
-          }}>{s === 'ALL' ? 'Tout' : s}</button>
+          <button
+            key={s.id}
+            onClick={() => setFilter(s.id)}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all ${
+              filter === s.id
+                ? 'bg-[#19221f] text-[#f9f8f5] shadow-xs'
+                : 'bg-white text-[#55605b] border border-[#e7e2d8] hover:border-[#bd6b46]'
+            }`}
+          >
+            {s.label}
+          </button>
         ))}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+      {/* Grid of Listings */}
+      <div className="space-y-4">
         {filtered.map(l => (
-          <div key={l.id} style={{
-            background: '#161618', border: '1px solid #2a2a2d', borderRadius: 12, padding: '16px 18px'
-          }}>
-            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-              <Thumb images={l.images} size={64} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: '#e3e2e2' }}>{l.title}</span>
+          <motion.div
+            key={l.id}
+            layout
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border border-[#e7e2d8] rounded-2xl p-5 shadow-morocco transition-all hover:border-[#ded7cb]"
+          >
+            <div className="flex flex-col md:flex-row gap-5 items-start">
+              <Thumb images={l.images} size={76} />
+              <div className="flex-1 min-w-0 w-full">
+                <div className="flex flex-wrap items-center gap-2.5 mb-2">
+                  <span className="text-lg font-bold font-serif text-[#19221f] leading-snug">{l.title}</span>
                   {statusBadge(l.status)}
-                  {l.isFeatured && <Badge label="⭐ Mis en avant" color="amber" />}
+                  {l.isFeatured && (
+                    <Badge label="Mis en avant" variant="terracotta" icon={Star} />
+                  )}
                 </div>
-                <div style={{ fontSize: 13, color: '#737373', marginBottom: 8 }}>
-                  {l.city} · {l.type} · {l.purpose === 'RENT' ? 'Location' : 'Vente'} · {fmt(l.price)} · {relDate(l.createdAt)}
-                  &nbsp;·&nbsp;{l._count?.offers || 0} offres, {l._count?.inquiries || 0} demandes
+
+                <div className="text-xs text-[#55605b] font-medium flex flex-wrap items-center gap-x-3 gap-y-1 mb-3">
+                  <span className="font-semibold text-[#bd6b46] font-mono text-sm">{fmt(l.price)}</span>
+                  <span>•</span>
+                  <span>{l.city}</span>
+                  <span>•</span>
+                  <span>{l.type}</span>
+                  <span>•</span>
+                  <span>{l.purpose === 'RENT' ? 'Location' : 'Vente'}</span>
+                  <span>•</span>
+                  <span>{relDate(l.createdAt)}</span>
+                  <span>•</span>
+                  <span className="text-[#19221f] font-semibold">{l._count?.offers || 0} offres</span>
+                  <span>,</span>
+                  <span className="text-[#19221f] font-semibold">{l._count?.inquiries || 0} demandes</span>
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+
+                <div className="flex flex-wrap items-center gap-2 mb-2">
                   {l.status !== 'PUBLISHED' && (
-                    <Btn small onClick={() => setStatus(l.id, 'PUBLISHED')}>✓ Publier</Btn>
+                    <Btn small icon={Check} onClick={() => setStatus(l.id, 'PUBLISHED')}>
+                      Publier
+                    </Btn>
                   )}
                   {l.status === 'PUBLISHED' && (
-                    <Btn small danger onClick={() => setStatus(l.id, 'UNPUBLISHED')}>✗ Retirer</Btn>
+                    <Btn small danger icon={X} onClick={() => setStatus(l.id, 'UNPUBLISHED')}>
+                      Retirer l'annonce
+                    </Btn>
                   )}
-                  <Btn small onClick={() => toggleFeatured(l.id)}>
-                    {l.isFeatured ? '★ Retirer la mise en avant' : '☆ Mettre en avant'}
-                  </Btn>
+                  <button
+                    onClick={() => toggleFeatured(l.id)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                      l.isFeatured
+                        ? 'bg-[#f5ece6] text-[#bd6b46] border-[#e6d0c2] hover:bg-[#eadbd0]'
+                        : 'bg-white text-[#55605b] border-[#e7e2d8] hover:border-[#bd6b46]'
+                    }`}
+                  >
+                    <Star className={`w-3.5 h-3.5 ${l.isFeatured ? 'fill-[#bd6b46] text-[#bd6b46]' : 'text-[#7d8882]'}`} />
+                    <span>{l.isFeatured ? 'Mis en avant' : 'Mettre en avant'}</span>
+                  </button>
                 </div>
-                <ContactBlock person={l.owner} label="PROPRIÉTAIRE — CONTACT CONFIDENTIEL" />
+
+                <ContactBlock person={l.owner} label="PROPRIÉTAIRE DU BIEN" />
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
-        {filtered.length === 0 && <p style={{ color: '#737373' }}>Aucune annonce.</p>}
+
+        {filtered.length === 0 && (
+          <div className="bg-white border border-[#e7e2d8] rounded-2xl p-12 text-center text-[#7d8882]">
+            <Inbox className="w-10 h-10 mx-auto mb-3 stroke-1 text-[#bd6b46]" />
+            <p className="text-sm font-medium">Aucune annonce trouvée dans cette catégorie.</p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TAB: Requests
+   TAB: REQUESTS
 ══════════════════════════════════════════════════════════════ */
 function RequestsTab({ token }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const r = await fetch(`${API}/admin/requests`, { headers: { Authorization: `Bearer ${token}` } });
-    const j = await r.json();
-    setData(j.data || []);
-    setLoading(false);
+    try {
+      const r = await fetch(`${API}/admin/requests`, { headers: { Authorization: `Bearer ${token}` } });
+      const j = await r.json();
+      setData(j.data || []);
+    } catch (err) {
+      console.error('Failed to load requests:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
   useEffect(() => { load(); }, [load]);
 
   const setStatus = async (id, status) => {
     await fetch(`${API}/admin/requests/${id}/status`, {
-      method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
     load();
   };
 
-  if (loading) return <p style={{ color: '#737373' }}>Chargement…</p>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-[#55605b] gap-3">
+        <RefreshCw className="w-5 h-5 animate-spin text-[#bd6b46]" />
+        <span>Chargement des demandes client…</span>
+      </div>
+    );
+  }
 
   return (
     <div>
       <SectionTitle count={data.length}>Demandes d'acheteurs & locataires</SectionTitle>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+      <div className="space-y-4">
         {data.map(req => (
-          <div key={req.id} style={{
-            background: '#161618', border: '1px solid #2a2a2d', borderRadius: 12, padding: '16px 18px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-              <Badge label={req.purpose === 'RENT' ? 'Location' : 'Achat'} color={req.purpose === 'RENT' ? 'blue' : 'purple'} />
-              <Badge label={req.type || 'Tout type'} color="neutral" />
+          <motion.div
+            key={req.id}
+            layout
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border border-[#e7e2d8] rounded-2xl p-5 shadow-morocco"
+          >
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <Badge
+                label={req.purpose === 'RENT' ? 'Location' : 'Achat'}
+                variant={req.purpose === 'RENT' ? 'blue' : 'purple'}
+              />
+              <Badge label={req.type || 'Tout type'} variant="neutral" />
               {statusBadge(req.status)}
-              <span style={{ fontSize: 12, color: '#737373', marginLeft: 'auto' }}>{relDate(req.createdAt)}</span>
+              <span className="text-xs text-[#7d8882] ml-auto font-medium">{relDate(req.createdAt)}</span>
             </div>
-            <div style={{ fontSize: 13, color: '#737373', marginBottom: 4 }}>
-              <strong style={{ color: '#a3a3a3' }}>{req.city}</strong>
-              {req.neighborhood && ` · ${req.neighborhood}`}
-              {req.maxBudget && ` · Budget max : ${fmt(req.maxBudget)}`}
-              {req.minBedrooms && ` · Min. ${req.minBedrooms} ch.`}
+
+            <div className="text-sm font-semibold text-[#19221f] mb-2 flex flex-wrap gap-x-4 gap-y-1">
+              <span>📍 Ville : <span className="text-[#bd6b46]">{req.city}</span>{req.neighborhood && ` (${req.neighborhood})`}</span>
+              {req.maxBudget && <span>💰 Budget max : <span className="font-mono text-[#bd6b46]">{fmt(req.maxBudget)}</span></span>}
+              {req.minBedrooms && <span>🛏 Min. {req.minBedrooms} ch.</span>}
             </div>
-            <p style={{ margin: '8px 0', fontSize: 13, color: '#d4d4d4', lineHeight: 1.5 }}>{req.description}</p>
+
+            <div className="bg-[#fcfaf7] border-l-3 border-[#bd6b46] rounded-r-xl p-3.5 my-3 text-sm text-[#30403a] leading-relaxed italic">
+              "{req.description}"
+            </div>
+
             {req.amenities?.length > 0 && (
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-                {req.amenities.map(a => <Badge key={a} label={a} color="neutral" />)}
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {req.amenities.map(a => (
+                  <span key={a} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#f0ede6] text-[#55605b]">
+                    {a}
+                  </span>
+                ))}
               </div>
             )}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
+
+            <div className="flex flex-wrap gap-2 mb-2">
               {req.status === 'ACTIVE' && (
-                <Btn small danger onClick={() => setStatus(req.id, 'CLOSED')}>✗ Fermer la demande</Btn>
+                <Btn small danger icon={X} onClick={() => setStatus(req.id, 'CLOSED')}>
+                  Fermer la demande
+                </Btn>
               )}
               {req.status !== 'ACTIVE' && (
-                <Btn small onClick={() => setStatus(req.id, 'ACTIVE')}>↺ Réactiver</Btn>
+                <Btn small icon={RefreshCw} onClick={() => setStatus(req.id, 'ACTIVE')}>
+                  Réactiver
+                </Btn>
               )}
             </div>
-            <ContactBlock person={req.requester} label="DEMANDEUR — CONTACT CONFIDENTIEL" />
-          </div>
+
+            <ContactBlock person={req.requester} label="DEMANDEUR — CONTACT CLIENT" />
+          </motion.div>
         ))}
-        {data.length === 0 && <p style={{ color: '#737373' }}>Aucune demande.</p>}
+
+        {data.length === 0 && (
+          <div className="bg-white border border-[#e7e2d8] rounded-2xl p-12 text-center text-[#7d8882]">
+            <ClipboardList className="w-10 h-10 mx-auto mb-3 stroke-1 text-[#bd6b46]" />
+            <p className="text-sm font-medium">Aucune demande soumise pour le moment.</p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TAB: Offers
+   TAB: OFFERS
 ══════════════════════════════════════════════════════════════ */
 function OffersTab({ token }) {
   const [data, setData] = useState([]);
@@ -317,100 +506,137 @@ function OffersTab({ token }) {
   const [notes, setNotes] = useState({});
 
   const load = useCallback(async () => {
-    const r = await fetch(`${API}/admin/offers`, { headers: { Authorization: `Bearer ${token}` } });
-    const j = await r.json();
-    setData(j.data || []);
-    setLoading(false);
+    try {
+      const r = await fetch(`${API}/admin/offers`, { headers: { Authorization: `Bearer ${token}` } });
+      const j = await r.json();
+      setData(j.data || []);
+    } catch (err) {
+      console.error('Failed to load offers:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
   useEffect(() => { load(); }, [load]);
 
   const updateOffer = async (id, status) => {
     await fetch(`${API}/admin/offers/${id}/status`, {
-      method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, adminNote: notes[id] })
     });
     load();
   };
 
-  if (loading) return <p style={{ color: '#737373' }}>Chargement…</p>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-[#55605b] gap-3">
+        <RefreshCw className="w-5 h-5 animate-spin text-[#bd6b46]" />
+        <span>Chargement des offres d'achat…</span>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <SectionTitle count={data.length}>Offres d'achat / location</SectionTitle>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <SectionTitle count={data.length}>Offres d'achat & location</SectionTitle>
+
+      <div className="space-y-4">
         {data.map(o => (
-          <div key={o.id} style={{
-            background: '#161618', border: '1px solid #2a2a2d', borderRadius: 12, padding: '16px 18px'
-          }}>
-            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-              <Thumb images={o.listing?.images} size={56} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 4 }}>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: '#e3e2e2' }}>
-                    {fmt(o.amount)}
-                  </span>
+          <motion.div
+            key={o.id}
+            layout
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border border-[#e7e2d8] rounded-2xl p-5 shadow-morocco"
+          >
+            <div className="flex flex-col md:flex-row gap-4 items-start">
+              <Thumb images={o.listing?.images} size={68} />
+              <div className="flex-1 min-w-0 w-full">
+                <div className="flex flex-wrap items-center gap-2.5 mb-1">
+                  <span className="text-xl font-bold font-mono text-[#bd6b46]">{fmt(o.amount)}</span>
                   {statusBadge(o.status)}
-                  <span style={{ fontSize: 12, color: '#737373' }}>{relDate(o.createdAt)}</span>
+                  <span className="text-xs text-[#7d8882] ml-auto font-medium">{relDate(o.createdAt)}</span>
                 </div>
-                <div style={{ fontSize: 13, color: '#737373', marginBottom: 8 }}>
-                  {o.listing?.title} — {o.listing?.city}
+
+                <div className="text-xs font-semibold text-[#19221f] mb-3">
+                  Annonce : {o.listing?.title || 'Bien non disponible'} — {o.listing?.city}
                 </div>
+
                 {o.message && (
-                  <div style={{ fontSize: 13, color: '#a3a3a3', background: '#1c1c1e', borderRadius: 8, padding: '8px 12px', marginBottom: 8 }}>
+                  <div className="bg-[#fcfaf7] border-l-3 border-[#bd6b46] rounded-r-xl p-3 my-2 text-xs text-[#30403a] leading-relaxed italic">
                     "{o.message}"
                   </div>
                 )}
+
                 {o.conditions && (
-                  <p style={{ fontSize: 12, color: '#737373', margin: '0 0 8px' }}>Conditions : {o.conditions}</p>
+                  <div className="text-xs text-[#55605b] mb-2 font-medium">
+                    Conditions : <span className="text-[#19221f]">{o.conditions}</span>
+                  </div>
                 )}
-                {/* Contact préféré */}
-                <div style={{ fontSize: 12, color: '#737373', marginBottom: 10 }}>
-                  Contact préféré : <strong style={{ color: '#a3a3a3' }}>{o.contactPreference}</strong>
+
+                <div className="text-xs text-[#7d8882] mb-3">
+                  Mode de contact préféré : <span className="font-semibold text-[#19221f] uppercase">{o.contactPreference || 'Téléphone'}</span>
                 </div>
 
-                {/* Admin note */}
-                <div style={{ marginBottom: 10 }}>
+                {/* Admin Note field */}
+                <div className="mb-3">
                   <textarea
-                    value={notes[o.id] || o.ownerResponse || ''}
+                    value={notes[o.id] !== undefined ? notes[o.id] : (o.ownerResponse || '')}
                     onChange={e => setNotes(n => ({ ...n, [o.id]: e.target.value }))}
-                    placeholder="Note interne / réponse transmise au vendeur…"
+                    placeholder="Note interne / message à transmettre..."
                     rows={2}
-                    style={{
-                      width: '100%', resize: 'vertical', boxSizing: 'border-box',
-                      background: '#1c1c1e', border: '1px solid #3a3a3d', borderRadius: 8,
-                      color: '#d4d4d4', fontSize: 13, padding: '8px 12px',
-                    }}
+                    className="w-full bg-[#fdfbf7] border border-[#e7e2d8] rounded-xl p-3 text-xs text-[#19221f] focus:outline-none focus:border-[#bd6b46]"
                   />
                 </div>
 
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {o.status === 'PENDING' && <>
-                    <Btn small onClick={() => updateOffer(o.id, 'ACCEPTED')}>✓ Transmettre (Accepté)</Btn>
-                    <Btn small danger onClick={() => updateOffer(o.id, 'REJECTED')}>✗ Refuser</Btn>
-                  </>}
-                  {o.status !== 'PENDING' && (
-                    <Btn small onClick={() => updateOffer(o.id, 'PENDING')}>↺ Remettre en attente</Btn>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {o.status === 'PENDING' && (
+                    <>
+                      <Btn small icon={Check} onClick={() => updateOffer(o.id, 'ACCEPTED')}>
+                        Transmettre (Accepté)
+                      </Btn>
+                      <Btn small danger icon={X} onClick={() => updateOffer(o.id, 'REJECTED')}>
+                        Refuser
+                      </Btn>
+                    </>
                   )}
-                  <Btn small onClick={() => updateOffer(o.id, o.status)}>💾 Enregistrer note</Btn>
+                  {o.status !== 'PENDING' && (
+                    <Btn small icon={RefreshCw} onClick={() => updateOffer(o.id, 'PENDING')}>
+                      Remettre en attente
+                    </Btn>
+                  )}
+                  <button
+                    onClick={() => updateOffer(o.id, o.status)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#f0ede6] hover:bg-[#e5e0d8] text-[#19221f] border border-[#ded7cb] cursor-pointer"
+                  >
+                    💾 Enregistrer note
+                  </button>
                 </div>
 
-                <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
+                {/* Dual Contact Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                   <ContactBlock person={o.buyer} label="ACHETEUR / LOCATAIRE" />
-                  <ContactBlock person={o.owner} label="PROPRIÉTAIRE" />
+                  <ContactBlock person={o.owner} label="PROPRIÉTAIRE DU BIEN" />
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
-        {data.length === 0 && <p style={{ color: '#737373' }}>Aucune offre.</p>}
+
+        {data.length === 0 && (
+          <div className="bg-white border border-[#e7e2d8] rounded-2xl p-12 text-center text-[#7d8882]">
+            <MessageSquareQuote className="w-10 h-10 mx-auto mb-3 stroke-1 text-[#bd6b46]" />
+            <p className="text-sm font-medium">Aucune offre soumise pour le moment.</p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TAB: Contacts / Inquiries
+   TAB: MESSAGES / CONTACTS
 ══════════════════════════════════════════════════════════════ */
 function ContactsTab({ token }) {
   const [data, setData] = useState([]);
@@ -418,134 +644,180 @@ function ContactsTab({ token }) {
   const [notes, setNotes] = useState({});
 
   const load = useCallback(async () => {
-    const r = await fetch(`${API}/admin/contacts`, { headers: { Authorization: `Bearer ${token}` } });
-    const j = await r.json();
-    setData(j.data || []);
-    setLoading(false);
+    try {
+      const r = await fetch(`${API}/admin/contacts`, { headers: { Authorization: `Bearer ${token}` } });
+      const j = await r.json();
+      setData(j.data || []);
+    } catch (err) {
+      console.error('Failed to load contacts:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
   useEffect(() => { load(); }, [load]);
 
   const update = async (id, status) => {
     await fetch(`${API}/admin/contacts/${id}/status`, {
-      method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, adminNote: notes[id] })
     });
     load();
   };
 
-  if (loading) return <p style={{ color: '#737373' }}>Chargement…</p>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-[#55605b] gap-3">
+        <RefreshCw className="w-5 h-5 animate-spin text-[#bd6b46]" />
+        <span>Chargement des messages de contact…</span>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <SectionTitle count={data.length}>Demandes de contact</SectionTitle>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <SectionTitle count={data.length}>Demandes de contact & messages</SectionTitle>
+
+      <div className="space-y-4">
         {data.map(c => (
-          <div key={c.id} style={{
-            background: '#161618', border: `1px solid ${c.status === 'UNREAD' ? '#854d0e' : '#2a2a2d'}`,
-            borderRadius: 12, padding: '16px 18px'
-          }}>
-            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-              <Thumb images={c.listing?.images} size={52} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#e3e2e2' }}>{c.listing?.title || 'Bien inconnu'}</span>
+          <motion.div
+            key={c.id}
+            layout
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`bg-white border rounded-2xl p-5 shadow-morocco ${
+              c.status === 'UNREAD' ? 'border-amber-300 ring-2 ring-amber-100' : 'border-[#e7e2d8]'
+            }`}
+          >
+            <div className="flex flex-col md:flex-row gap-4 items-start">
+              <Thumb images={c.listing?.images} size={60} />
+              <div className="flex-1 min-w-0 w-full">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className="text-base font-bold font-serif text-[#19221f]">
+                    {c.listing?.title || 'Bien non spécifié'}
+                  </span>
                   {statusBadge(c.status)}
-                  <span style={{ fontSize: 12, color: '#737373' }}>{relDate(c.createdAt)}</span>
+                  <span className="text-xs text-[#7d8882] ml-auto font-medium">{relDate(c.createdAt)}</span>
                 </div>
-                <div style={{
-                  fontSize: 13, color: '#d4d4d4', background: '#1c1c1e',
-                  borderRadius: 8, padding: '8px 12px', margin: '8px 0', lineHeight: 1.5
-                }}>
+
+                <div className="bg-[#fcfaf7] border-l-3 border-[#bd6b46] rounded-r-xl p-3.5 my-2 text-xs text-[#30403a] leading-relaxed">
                   "{c.message}"
                 </div>
-                <textarea
-                  value={notes[c.id] || c.adminNote || ''}
-                  onChange={e => setNotes(n => ({ ...n, [c.id]: e.target.value }))}
-                  placeholder="Note interne…"
-                  rows={2}
-                  style={{
-                    width: '100%', resize: 'vertical', boxSizing: 'border-box',
-                    background: '#1c1c1e', border: '1px solid #3a3a3d', borderRadius: 8,
-                    color: '#d4d4d4', fontSize: 13, padding: '8px 12px', marginBottom: 8
-                  }}
-                />
-                <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
-                  {c.status === 'UNREAD' && (
-                    <Btn small onClick={() => update(c.id, 'READ')}>✓ Marquer lu</Btn>
-                  )}
-                  <Btn small onClick={() => update(c.id, c.status)}>💾 Enregistrer note</Btn>
+
+                <div className="mb-3">
+                  <textarea
+                    value={notes[c.id] !== undefined ? notes[c.id] : (c.adminNote || '')}
+                    onChange={e => setNotes(n => ({ ...n, [c.id]: e.target.value }))}
+                    placeholder="Note interne d'accompagnement…"
+                    rows={2}
+                    className="w-full bg-[#fdfbf7] border border-[#e7e2d8] rounded-xl p-3 text-xs text-[#19221f] focus:outline-none focus:border-[#bd6b46]"
+                  />
                 </div>
-                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                  <ContactBlock person={c.sender} label="EXPÉDITEUR" />
+
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {c.status === 'UNREAD' && (
+                    <Btn small icon={Check} onClick={() => update(c.id, 'READ')}>
+                      Marquer comme lu
+                    </Btn>
+                  )}
+                  <button
+                    onClick={() => update(c.id, c.status)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#f0ede6] hover:bg-[#e5e0d8] text-[#19221f] border border-[#ded7cb] cursor-pointer"
+                  >
+                    💾 Enregistrer note
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                  <ContactBlock person={c.sender} label="EXPÉDITEUR DU MESSAGE" />
                   <ContactBlock person={c.recipient} label="DESTINATAIRE (PROPRIÉTAIRE)" />
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
-        {data.length === 0 && <p style={{ color: '#737373' }}>Aucun message.</p>}
+
+        {data.length === 0 && (
+          <div className="bg-white border border-[#e7e2d8] rounded-2xl p-12 text-center text-[#7d8882]">
+            <Mail className="w-10 h-10 mx-auto mb-3 stroke-1 text-[#bd6b46]" />
+            <p className="text-sm font-medium">Aucun message de contact enregistré.</p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TAB: Users
+   TAB: USERS
 ══════════════════════════════════════════════════════════════ */
 function UsersTab({ token }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const r = await fetch(`${API}/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
-    const j = await r.json();
-    setData(j.data || []);
-    setLoading(false);
+    try {
+      const r = await fetch(`${API}/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
+      const j = await r.json();
+      setData(j.data || []);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return <p style={{ color: '#737373' }}>Chargement…</p>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-[#55605b] gap-3">
+        <RefreshCw className="w-5 h-5 animate-spin text-[#bd6b46]" />
+        <span>Chargement des utilisateurs inscrits…</span>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <SectionTitle count={data.length}>Utilisateurs inscrits</SectionTitle>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: 12
-      }}>
+      <SectionTitle count={data.length}>Utilisateurs & Membres</SectionTitle>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {data.map(u => (
-          <div key={u.id} style={{
-            background: '#161618', border: '1px solid #2a2a2d', borderRadius: 12, padding: '16px 18px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                background: 'linear-gradient(135deg,#1a3a2a,#0f2d1a)',
-                border: '1px solid #34d399',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 16, fontWeight: 700, color: '#34d399'
-              }}>
-                {u.name?.[0]?.toUpperCase()}
+          <motion.div
+            key={u.id}
+            layout
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white border border-[#e7e2d8] rounded-2xl p-5 shadow-morocco flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#19221f] to-[#bd6b46] text-white flex items-center justify-center font-bold text-lg shadow-xs flex-shrink-0">
+                  {u.name?.[0]?.toUpperCase() || 'U'}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-sm text-[#19221f] truncate">{u.name}</div>
+                  <div className="text-xs text-[#7d8882]">Inscrit {relDate(u.createdAt)}</div>
+                </div>
+                {u.phoneVerified && (
+                  <Badge label="Vérifié" variant="green" icon={CheckCircle2} />
+                )}
               </div>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 14, color: '#e3e2e2' }}>{u.name}</div>
-                <div style={{ fontSize: 11, color: '#737373' }}>Inscrit {relDate(u.createdAt)}</div>
+
+              <div className="space-y-1.5 mb-4">
+                <ContactPill icon={Mail} value={u.email} href={`mailto:${u.email}`} />
+                <ContactPill icon={Phone} value={u.phone} href={`tel:${u.phone}`} />
               </div>
-              {u.phoneVerified && <Badge label="✓ Vérifié" color="green" />}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
-              <ContactPill icon="✉" value={u.email} href={`mailto:${u.email}`} />
-              <ContactPill icon="📞" value={u.phone} href={`tel:${u.phone}`} />
+
+            <div className="pt-3 border-t border-[#f0ede6] flex items-center justify-between text-xs text-[#55605b] font-medium">
+              <span>🏠 {u.listingsCount || 0} annonces</span>
+              <span>📋 {u.requestsCount || 0} demandes</span>
+              <span>💬 {u.offersCount || 0} offres</span>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, color: '#737373' }}>🏠 {u.listingsCount} annonces</span>
-              <span style={{ fontSize: 12, color: '#737373' }}>📋 {u.requestsCount} demandes</span>
-              <span style={{ fontSize: 12, color: '#737373' }}>💬 {u.offersCount} offres</span>
-            </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>
@@ -553,7 +825,7 @@ function UsersTab({ token }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LOGIN GATE
+   ADMIN LOGIN SCREEN
 ══════════════════════════════════════════════════════════════ */
 function AdminLogin({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -578,9 +850,13 @@ function AdminLogin({ onLogin }) {
         const text = await r.text().catch(() => '');
         j = { error: text || `Erreur serveur (HTTP ${r.status})` };
       }
-      if (!r.ok) { setError(j.error || 'Identifiants incorrects.'); setLoading(false); return; }
+      if (!r.ok) {
+        setError(j.error || 'Identifiants incorrects.');
+        setLoading(false);
+        return;
+      }
       if (j.data?.user?.role !== 'ADMIN') {
-        setError('Accès réservé aux administrateurs Atlassi.');
+        setError('Accès réservé exclusivement aux administrateurs Atlassi.');
         setLoading(false);
         return;
       }
@@ -591,173 +867,273 @@ function AdminLogin({ onLogin }) {
     }
   };
 
-  const inp = {
-    width: '100%', boxSizing: 'border-box',
-    background: '#161618', border: '1px solid #3a3a3d', borderRadius: 8,
-    color: '#e3e2e2', fontSize: 14, padding: '10px 14px',
-    outline: 'none', fontFamily: 'inherit'
-  };
-
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#0d0f11', fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif'
-    }}>
-      <div style={{
-        width: '100%', maxWidth: 400, padding: '0 20px'
-      }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#34d399', letterSpacing: '-.02em' }}>
-            atlassi
+    <div className="min-h-screen bg-[#f9f8f5] flex items-center justify-center p-4 font-sans text-[#19221f]">
+      <div className="w-full max-w-md">
+        {/* Editorial Brand Header */}
+        <div className="text-center mb-8">
+          <a href="/" className="inline-flex items-center gap-1.5 group select-none">
+            <span className="text-3xl font-bold tracking-tighter text-[#19221f] font-serif">
+              atlassi
+            </span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#bd6b46] inline-block" />
+          </a>
+          <div className="text-xs uppercase tracking-widest text-[#7d8882] font-semibold mt-2">
+            Console d'Administration
           </div>
-          <div style={{ fontSize: 13, color: '#737373', marginTop: 4 }}>Console d'administration</div>
         </div>
 
-        <form onSubmit={submit} style={{
-          background: '#111113', border: '1px solid #2a2a2d',
-          borderRadius: 16, padding: '28px 24px'
-        }}>
-          <h2 style={{ margin: '0 0 24px', fontSize: 18, fontWeight: 600, color: '#e3e2e2' }}>
-            Accès administrateur
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Login Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white border border-[#e7e2d8] rounded-3xl p-8 shadow-morocco"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-[#f5ece6] text-[#bd6b46] rounded-2xl">
+              <ShieldCheck className="w-6 h-6 stroke-1.5" />
+            </div>
             <div>
-              <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 6, fontWeight: 500 }}>
+              <h1 className="text-lg font-bold font-serif text-[#19221f]">Accès Administrateur</h1>
+              <p className="text-xs text-[#7d8882]">Veuillez vous authentifier pour continuer</p>
+            </div>
+          </div>
+
+          <form onSubmit={submit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#55605b] mb-1.5">
                 Adresse e-mail
               </label>
-              <input style={inp} type="email" value={email}
-                onChange={e => setEmail(e.target.value)} required />
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm text-[#19221f] focus:outline-none focus:border-[#bd6b46] transition-colors"
+                placeholder="admin@atlassi.ma"
+              />
             </div>
+
             <div>
-              <label style={{ display: 'block', fontSize: 12, color: '#737373', marginBottom: 6, fontWeight: 500 }}>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#55605b] mb-1.5">
                 Mot de passe
               </label>
-              <input style={inp} type="password" value={password}
-                onChange={e => setPassword(e.target.value)} required />
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm text-[#19221f] focus:outline-none focus:border-[#bd6b46] transition-colors"
+                placeholder="••••••••"
+              />
             </div>
+
             {error && (
-              <div style={{ background: 'rgba(239,68,68,.12)', border: '1px solid rgba(239,68,68,.3)',
-                borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#f87171' }}>
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-800 font-medium">
                 {error}
               </div>
             )}
-            <button type="submit" disabled={loading} style={{
-              padding: '11px', borderRadius: 8, border: 'none',
-              background: loading ? '#1a3a2a' : 'linear-gradient(135deg,#059669,#34d399)',
-              color: '#fff', fontSize: 14, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer'
-            }}>
-              {loading ? 'Connexion…' : 'Se connecter'}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-4 bg-[#19221f] hover:bg-[#2c3a35] text-[#f9f8f5] font-semibold text-sm rounded-xl transition-all shadow-xs cursor-pointer flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-[#bd6b46]" />
+                  <span>Connexion en cours…</span>
+                </>
+              ) : (
+                <span>Se connecter</span>
+              )}
             </button>
-            <button type="button" onClick={() => { setEmail('admin@atlassi.ma'); setPassword('atlassi2024'); }} style={{
-              background: 'none', border: '1px dashed #3a3a3d', borderRadius: 8, padding: '8px',
-              color: '#34d399', fontSize: 12, cursor: 'pointer', marginTop: 4
-            }}>
-              Remplir identifiants démo (Admin)
+
+            <button
+              type="button"
+              onClick={() => { setEmail('admin@atlassi.ma'); setPassword('atlassi2024'); }}
+              className="w-full py-2 px-3 border border-dashed border-[#bd6b46]/50 bg-[#f5ece6]/40 hover:bg-[#f5ece6] text-[#bd6b46] font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+            >
+              ✨ Remplir identifiants démo (Admin)
             </button>
-          </div>
-          <p style={{ fontSize: 12, color: '#4a4a4a', marginTop: 16, textAlign: 'center' }}>
-            Accès réservé à l'équipe Atlassi
+          </form>
+
+          <p className="text-center text-[11px] text-[#7d8882] mt-6">
+            Accès sécurisé réservé à l'équipe Atlassi Maroc
           </p>
-        </form>
+        </motion.div>
       </div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   DASHBOARD SHELL + STATS
+   DASHBOARD SHELL
 ══════════════════════════════════════════════════════════════ */
 const TABS = [
-  { id: 'listings', label: '🏠 Annonces' },
-  { id: 'requests', label: '📋 Demandes' },
-  { id: 'offers', label: '💬 Offres' },
-  { id: 'contacts', label: '✉ Messages' },
-  { id: 'users', label: '👤 Utilisateurs' },
+  { id: 'listings', label: 'Annonces', icon: Building2 },
+  { id: 'requests', label: 'Demandes', icon: ClipboardList },
+  { id: 'offers', label: 'Offres', icon: MessageSquareQuote },
+  { id: 'contacts', label: 'Messages', icon: Mail },
+  { id: 'users', label: 'Utilisateurs', icon: Users },
 ];
 
 function Dashboard({ token, admin, onLogout }) {
   const [tab, setTab] = useState('listings');
   const [stats, setStats] = useState(null);
+  const { isRtl } = useLanguage();
 
-  useEffect(() => {
+  const loadStats = useCallback(() => {
     fetch(`${API}/admin/stats`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json()).then(j => setStats(j.data)).catch(() => {});
+      .then(r => r.json())
+      .then(j => setStats(j.data))
+      .catch(() => {});
   }, [token]);
 
-  return (
-    <div style={{
-      minHeight: '100vh', background: '#0d0f11',
-      fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
-      color: '#e3e2e2'
-    }}>
-      {/* Top bar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '14px 28px', borderBottom: '1px solid #1e1e21',
-        background: '#111113', position: 'sticky', top: 0, zIndex: 100
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: 20, fontWeight: 800, color: '#34d399', letterSpacing: '-.02em' }}>atlassi</span>
-          <span style={{ fontSize: 12, color: '#4a4a4a', borderLeft: '1px solid #2a2a2d', paddingLeft: 16 }}>
-            Console d'administration
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 13, color: '#737373' }}>
-            Connecté en tant que <strong style={{ color: '#a3a3a3' }}>{admin.name}</strong>
-          </span>
-          <button onClick={onLogout} style={{
-            padding: '5px 12px', borderRadius: 6, border: '1px solid #3a3a3d',
-            background: 'transparent', color: '#737373', fontSize: 12, cursor: 'pointer'
-          }}>
-            Déconnexion
-          </button>
-        </div>
-      </div>
+  useEffect(() => { loadStats(); }, [loadStats]);
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px' }}>
-        {/* Stats */}
+  return (
+    <div className="min-h-screen bg-[#f9f8f5] text-[#19221f] font-sans antialiased">
+      {/* Editorial Navbar Header */}
+      <header className="sticky top-0 z-40 w-full bg-[#f9f8f5]/92 backdrop-blur-md border-b border-[#e5e0d8] transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+          {/* Brand & Admin Badge */}
+          <div className="flex items-center gap-3">
+            <a href="/" className="flex items-center gap-1.5 group select-none">
+              <span className="text-2xl font-bold tracking-tighter text-[#19221f] font-serif transition-colors group-hover:text-[#bd6b46]">
+                atlassi
+              </span>
+              <span className="w-2 h-2 rounded-full bg-[#bd6b46] inline-block" />
+            </a>
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-widest uppercase bg-[#19221f] text-[#f9f8f5]">
+              <ShieldCheck className="w-3 h-3 text-[#bd6b46]" /> Admin
+            </span>
+          </div>
+
+          {/* Right Header Controls */}
+          <div className="flex items-center gap-3">
+            <LanguageToggle className="hidden sm:inline-flex" />
+
+            <div className="flex items-center gap-2 pl-3 border-l border-[#e5e0d8]">
+              <div className="hidden md:block text-right">
+                <div className="text-xs font-bold text-[#19221f]">{admin.name}</div>
+                <div className="text-[10px] text-[#7d8882]">Administrateur</div>
+              </div>
+              <button
+                onClick={onLogout}
+                title="Déconnexion"
+                className="p-2 rounded-xl border border-[#e5e0d8] bg-white hover:bg-[#f0ede6] text-[#55605b] hover:text-rose-700 transition-all cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 stroke-1.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Admin Content Container */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Top Summary Stat Cards */}
         {stats && (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-            gap: 12, marginBottom: 32
-          }}>
-            <StatCard label="Annonces publiées" value={stats.publishedListings} sub={`/ ${stats.totalListings} total`} accent="#34d399" />
-            <StatCard label="Demandes actives" value={stats.activeRequests} sub={`/ ${stats.totalRequests} total`} accent="#60a5fa" />
-            <StatCard label="Offres en attente" value={stats.pendingOffers} sub={`/ ${stats.totalOffers} total`} accent="#fbbf24" />
-            <StatCard label="Messages non lus" value={stats.unreadContacts} sub={`/ ${stats.totalContacts} total`} accent="#f87171" />
-            <StatCard label="Utilisateurs" value={stats.totalUsers} accent="#c084fc" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-8">
+            <StatCard
+              label="Annonces"
+              value={stats.publishedListings}
+              sub={`/ ${stats.totalListings} au total`}
+              accentColor="bg-emerald-50 text-emerald-700"
+              icon={Building2}
+            />
+            <StatCard
+              label="Demandes Actives"
+              value={stats.activeRequests}
+              sub={`/ ${stats.totalRequests} au total`}
+              accentColor="bg-sky-50 text-sky-700"
+              icon={ClipboardList}
+            />
+            <StatCard
+              label="Offres en attente"
+              value={stats.pendingOffers}
+              sub={`/ ${stats.totalOffers} au total`}
+              accentColor="bg-amber-50 text-amber-800"
+              icon={MessageSquareQuote}
+            />
+            <StatCard
+              label="Messages non lus"
+              value={stats.unreadContacts}
+              sub={`/ ${stats.totalContacts} au total`}
+              accentColor="bg-rose-50 text-rose-700"
+              icon={Mail}
+            />
+            <StatCard
+              label="Membres Inscrits"
+              value={stats.totalUsers}
+              sub="Comptes clients"
+              accentColor="bg-[#f5ece6] text-[#bd6b46]"
+              icon={Users}
+            />
           </div>
         )}
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 28, overflowX: 'auto' }}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{
-              padding: '8px 16px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 500,
-              cursor: 'pointer', whiteSpace: 'nowrap',
-              background: tab === t.id ? 'rgba(52,211,153,.12)' : 'transparent',
-              color: tab === t.id ? '#34d399' : '#737373',
-              outline: tab === t.id ? '1px solid rgba(52,211,153,.3)' : 'none',
-            }}>{t.label}</button>
-          ))}
+        {/* Tab Navigation Pill Bar */}
+        <div className="bg-[#f0ede6] p-1.5 rounded-2xl flex gap-1 sm:gap-2 mb-8 overflow-x-auto border border-[#e5e0d8] custom-scrollbar">
+          {TABS.map(t => {
+            const Icon = t.icon;
+            const count =
+              t.id === 'listings' ? stats?.totalListings :
+              t.id === 'requests' ? stats?.totalRequests :
+              t.id === 'offers' ? stats?.totalOffers :
+              t.id === 'contacts' ? stats?.totalContacts :
+              t.id === 'users' ? stats?.totalUsers : null;
+
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap transition-all ${
+                  tab === t.id
+                    ? 'bg-[#19221f] text-[#f9f8f5] shadow-sm'
+                    : 'text-[#55605b] hover:text-[#19221f] hover:bg-white/60'
+                }`}
+              >
+                <Icon className="w-4 h-4 stroke-1.5" />
+                <span>{t.label}</span>
+                {count != null && (
+                  <span
+                    className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                      tab === t.id ? 'bg-[#bd6b46] text-white' : 'bg-[#e5e0d8] text-[#55605b]'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Tab content */}
-        {tab === 'listings' && <ListingsTab token={token} />}
-        {tab === 'requests' && <RequestsTab token={token} />}
-        {tab === 'offers' && <OffersTab token={token} />}
-        {tab === 'contacts' && <ContactsTab token={token} />}
-        {tab === 'users' && <UsersTab token={token} />}
-      </div>
+        {/* Active Tab View */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+          >
+            {tab === 'listings' && <ListingsTab token={token} />}
+            {tab === 'requests' && <RequestsTab token={token} />}
+            {tab === 'offers' && <OffersTab token={token} />}
+            {tab === 'contacts' && <ContactsTab token={token} />}
+            {tab === 'users' && <UsersTab token={token} />}
+          </motion.div>
+        </AnimatePresence>
+      </main>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ROOT COMPONENT
+   ROOT ADMIN PAGE COMPONENT
 ══════════════════════════════════════════════════════════════ */
 export default function AdminPage() {
   const [auth, setAuth] = useState(() => {
@@ -765,7 +1141,9 @@ export default function AdminPage() {
       const t = sessionStorage.getItem('atlassi-admin-token');
       const u = sessionStorage.getItem('atlassi-admin-user');
       return t && u ? { token: t, user: JSON.parse(u) } : null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   });
 
   const handleLogin = (token, user) => {
