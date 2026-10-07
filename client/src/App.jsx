@@ -384,69 +384,6 @@ export function App() {
 
         </section>
 
-        {/* Client Requests & Broadcast Section */}
-        <section id="requests" className="bg-[#ede8df] border-t border-[#ded7cb] py-16 lg:py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center mb-10">
-              <div className="lg:col-span-8">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#ded7cb] text-[#bd6b46] text-xs font-semibold uppercase tracking-wider mb-3">
-                  <MessageSquarePlus className="w-3.5 h-3.5" />
-                  <span>{t('requests.badge')}</span>
-                </div>
-                <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#19221f] leading-tight">
-                  {t('requests.headlineMain')}<br />
-                  <span className="italic font-normal text-[#bd6b46]">{t('requests.headlineSub')}</span>
-                </h2>
-                <p className="text-xs sm:text-sm text-stone-600 mt-2 max-w-xl leading-relaxed">
-                  {t('requests.subcopy')}
-                </p>
-              </div>
-
-              <div className="lg:col-span-4 flex justify-start lg:justify-end">
-                <button
-                  onClick={() => {
-                    if (!currentUser) setShowAuthModal(true);
-                    else setShowCreateRequestModal(true);
-                  }}
-                  className="px-6 py-3.5 rounded-full bg-[#1b2622] hover:bg-[#283631] text-white text-xs font-bold tracking-wider uppercase flex items-center gap-2 transition-all shadow-md active:scale-98 cursor-pointer"
-                >
-                  <Plus className="w-4 h-4 text-[#bd6b46]" />
-                  <span>{t('requests.broadcastBtn')}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Live Requests Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {requests.slice(0, 3).map((req) => (
-                <div
-                  key={req.id}
-                  className="bg-white p-5 rounded-2xl border border-[#ded7cb] shadow-2xs flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between text-[11px] text-stone-400 font-semibold uppercase tracking-wider mb-2">
-                      <span className="text-[#bd6b46]">
-                        {req.purpose === 'SALE' ? t('requests.lookingToBuy') : t('requests.lookingToRent')} · {translateType(req.type || 'Property')}
-                      </span>
-                      <span>{translateCity(req.city)}</span>
-                    </div>
-                    <p className="text-xs text-stone-700 font-medium leading-relaxed mb-3">
-                      “{getLocalizedRequestDescription(req)}”
-                    </p>
-                  </div>
-
-                  <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-[11px]">
-                    <span className="text-stone-500 font-mono">
-                      {t('requests.maxBudget')} {req.maxBudget ? formatPrice(req.maxBudget, req.purpose) : t('requests.flexible')}
-                    </span>
-                    <span className="font-semibold text-[#1b2622]">{t('requests.activeBrief')}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* Editorial Philosophy Section */}
         <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-[#e7e2d8]">
           <div className="text-center max-w-2xl mx-auto mb-16">

@@ -69,12 +69,6 @@ export function Navbar({
             {t('nav.rent')}
           </button>
           <button
-            onClick={() => scrollTo('requests')}
-            className="hover:text-[#1b2622] transition-colors cursor-pointer"
-          >
-            {t('nav.clientRequests')}
-          </button>
-          <button
             onClick={() => scrollTo('about')}
             className="hover:text-[#1b2622] transition-colors cursor-pointer"
           >
@@ -241,12 +235,6 @@ export function Navbar({
               className="text-start py-1 text-stone-700 hover:text-[#bd6b46] cursor-pointer"
             >
               {t('nav.propertiesForRent')}
-            </button>
-            <button
-              onClick={() => scrollTo('requests')}
-              className="text-start py-1 text-stone-700 hover:text-[#bd6b46] cursor-pointer"
-            >
-              {t('nav.clientRequests')}
             </button>
             <button
               onClick={() => scrollTo('about')}

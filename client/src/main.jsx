@@ -9,13 +9,9 @@ const isAdmin = window.location.pathname.toLowerCase().startsWith('/admin');
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    {isAdmin ? (
-      <AdminPage />
-    ) : (
-      <LanguageProvider>
-        <App />
-      </LanguageProvider>
-    )}
+    <LanguageProvider>
+      {isAdmin ? <AdminPage /> : <App />}
+    </LanguageProvider>
   </StrictMode>,
 );
 

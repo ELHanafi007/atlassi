@@ -531,7 +531,7 @@ class DataStore {
       furnished: Boolean(data.furnished),
       amenities: Array.isArray(data.amenities) ? data.amenities : [],
       isFeatured: false,
-      status: 'PUBLISHED',
+      status: 'PENDING',
       sellerId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()

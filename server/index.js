@@ -344,6 +344,14 @@ app.post('/api/auth/verify-phone', requireAuth, async (req, res, next) => {
   }
 });
 
+const ATLASSI_PUBLIC_SELLER = {
+  id: 0,
+  name: 'Équipe Atlassi',
+  email: 'contact@atlassi.ma',
+  phone: '+212 522 000 000',
+  phoneVerified: true
+};
+
 // LISTINGS
 app.get('/api/listings', async (req, res, next) => {
   try {
@@ -380,16 +388,25 @@ app.get('/api/listings', async (req, res, next) => {
       const listings = await db.listing.findMany({
         where,
         include: {
-          images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
-          seller: { select: { id: true, name: true, email: true, phone: true } }
+          images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] }
         },
         orderBy
       });
-      return res.json({ data: listings, meta: { total: listings.length, mode: 'database' } });
+
+      const publicListings = listings.map(l => ({
+        ...l,
+        seller: ATLASSI_PUBLIC_SELLER
+      }));
+
+      return res.json({ data: publicListings, meta: { total: publicListings.length, mode: 'database' } });
     }
 
     const listings = store.getListings(req.query);
-    return res.json({ data: listings, meta: { total: listings.length, mode: 'persistent-store' } });
+    const publicListings = listings.map(l => ({
+      ...l,
+      seller: ATLASSI_PUBLIC_SELLER
+    }));
+    return res.json({ data: publicListings, meta: { total: publicListings.length, mode: 'persistent-store' } });
   } catch (error) {
     return next(error);
   }
@@ -403,15 +420,18 @@ app.get('/api/listings/:id', async (req, res, next) => {
       const listing = await db.listing.findFirst({
         where: { id, status: 'PUBLISHED' },
         include: {
-          images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
-          seller: { select: { id: true, name: true, email: true, phone: true, createdAt: true } }
+          images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] }
         }
       });
-      return listing ? res.json({ data: listing }) : res.status(404).json({ error: 'Listing not found' });
+      return listing
+        ? res.json({ data: { ...listing, seller: ATLASSI_PUBLIC_SELLER } })
+        : res.status(404).json({ error: 'Listing not found' });
     }
 
     const listing = store.getListingById(id);
-    return listing ? res.json({ data: listing }) : res.status(404).json({ error: 'Listing not found' });
+    return listing
+      ? res.json({ data: { ...listing, seller: ATLASSI_PUBLIC_SELLER } })
+      : res.status(404).json({ error: 'Listing not found' });
   } catch (error) {
     return next(error);
   }
@@ -469,7 +489,7 @@ app.post('/api/listings', requireAuth, async (req, res, next) => {
           furnished: Boolean(furnished),
           amenities: Array.isArray(amenities) ? amenities : [],
           instagramVideoUrl: instagramVideoUrl || null,
-          status: 'PUBLISHED',
+          status: 'DRAFT', // Requires Admin approval before publication
           sellerId: req.user.id,
           images: {
             create: images.map((url, idx) => ({
@@ -481,11 +501,18 @@ app.post('/api/listings', requireAuth, async (req, res, next) => {
         },
         include: { images: true }
       });
-      return res.status(201).json({ data: listing });
+      return res.status(201).json({
+        data: { ...listing, seller: ATLASSI_PUBLIC_SELLER },
+        message: "Votre annonce a été soumise avec succès ! Elle sera examinée et publiée par l'équipe Atlassi."
+      });
     }
 
     const created = store.createListing(req.body, req.user.id);
-    return res.status(201).json({ data: created, meta: { mode: 'persistent-store' } });
+    return res.status(201).json({
+      data: { ...created, seller: ATLASSI_PUBLIC_SELLER },
+      meta: { mode: 'persistent-store' },
+      message: "Votre annonce a été soumise avec succès ! Elle sera examinée et publiée par l'équipe Atlassi."
+    });
   } catch (error) {
     return next(error);
   }
