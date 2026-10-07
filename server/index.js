@@ -787,7 +787,7 @@ app.post('/api/requests', requireAuth, async (req, res, next) => {
   }
 });
 
-app.get('/api/requests', async (req, res, next) => {
+app.get('/api/requests', requireAdmin, async (req, res, next) => {
   try {
     const db = await getPrisma();
     if (db) {

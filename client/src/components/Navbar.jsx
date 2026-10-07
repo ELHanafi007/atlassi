@@ -9,6 +9,7 @@ export function Navbar({
   savedCount,
   onOpenAuth,
   onOpenCreateListing,
+  onOpenCreateRequest,
   onLogout,
   onFilterByPurpose,
   onShowFavoritesOnly,
@@ -67,6 +68,12 @@ export function Navbar({
             className="hover:text-[#1b2622] transition-colors cursor-pointer"
           >
             {t('nav.rent')}
+          </button>
+          <button
+            onClick={onOpenCreateRequest}
+            className="hover:text-[#bd6b46] transition-colors cursor-pointer font-semibold"
+          >
+            {isRtl ? 'طلب مخصص' : 'Demande sur-mesure'}
           </button>
           <button
             onClick={() => scrollTo('about')}
@@ -235,6 +242,15 @@ export function Navbar({
               className="text-start py-1 text-stone-700 hover:text-[#bd6b46] cursor-pointer"
             >
               {t('nav.propertiesForRent')}
+            </button>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenCreateRequest();
+              }}
+              className="text-start py-1 text-stone-700 hover:text-[#bd6b46] cursor-pointer font-semibold"
+            >
+              {isRtl ? 'طلب مخصص' : 'Demande sur-mesure'}
             </button>
             <button
               onClick={() => scrollTo('about')}

@@ -241,8 +241,8 @@ export const translations = {
       criteriaPlaceholder: 'مثلاً: أبحث عن شقة مشرقة في طابق علوي بشرفة واسعة، موقف سيارات ضروري، جاهزة للانتقال في غضون أسابيع...',
       submitBtn: 'إرسال الطلب للملّاك',
       submittingBtn: 'جارٍ نشر الطلب…',
-      successTitle: 'تم نشر طلبك بنجاح',
-      successDesc: (city) => `سيتم إشعار الملّاك في مدينة ${city} الذين تطابق عقاراتهم معاييرك للتواصل معك مباشرة.`,
+      successTitle: 'تم إرسال طلبك بنجاح',
+      successDesc: () => `تم إرسال طلبك المخصص بسريّة إلى فريق أطلسي. يتم تسجيل الطلب في لوحة التحكم الإدارية ولن يتم نشره علناً.`,
       doneBtn: 'تم',
     },
 
@@ -597,8 +597,8 @@ export const translations = {
       criteriaPlaceholder: 'ex: Recherche appartement lumineux en étage élevé avec balcon vue mer, place de garage impérative, emménagement d’ici 6 semaines...',
       submitBtn: 'Diffuser la demande aux propriétaires',
       submittingBtn: 'Diffusion en cours…',
-      successTitle: 'Demande Publiée',
-      successDesc: (city) => `Les propriétaires marocains dont les biens correspondent à vos critères à ${city} pourront vous contacter directement.`,
+      successTitle: 'Demande Transmise avec Succès',
+      successDesc: () => `Votre demande sur-mesure a été transmise en toute confidentialité à l'équipe Atlassi. Elle est enregistrée dans notre console d'administration et ne sera pas publiée publiquement sur le site.`,
       doneBtn: 'Terminé',
     },
 

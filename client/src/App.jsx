@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-import { auth, listingsApi, requestsApi } from './lib/api';
+import { auth, listingsApi } from './lib/api';
 import { useLanguage } from './lib/i18n';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -20,7 +20,7 @@ import { AuthModal } from './components/AuthModal';
 import { Toast } from './components/Toast';
 
 export function App() {
-  const { t, lang, translateCity, translateType, formatPrice, isRtl } = useLanguage();
+  const { t, translateCity, translateType, formatPrice, isRtl } = useLanguage();
 
   // State: Authentication
   const [currentUser, setCurrentUser] = useState(null);
@@ -30,7 +30,6 @@ export function App() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [requests, setRequests] = useState([]);
 
   // State: Favorites
   const [savedIds, setSavedIds] = useState(() => {
@@ -124,14 +123,6 @@ export function App() {
     return () => clearTimeout(timer);
   }, [fetchListings]);
 
-  // Fetch Requests
-  useEffect(() => {
-    requestsApi.getAll()
-      .then((res) => {
-        if (res?.data) setRequests(res.data);
-      })
-      .catch((err) => console.warn('Could not load requests:', err.message));
-  }, []);
 
   // Toggle Favorite
   const handleToggleSave = (id) => {
@@ -182,24 +173,6 @@ export function App() {
     setSelectedProperty(newListing);
   };
 
-  const handleRequestCreated = (newRequest) => {
-    setRequests((prev) => [newRequest, ...prev]);
-  };
-
-  // Localize sample request descriptions
-  const getLocalizedRequestDescription = (req) => {
-    if (req.id === 1) {
-      return lang === 'ar'
-        ? "مهندس معماري يبحث عن شقة هادئة في طابق علوي، مفعمة بالنور الطبيعي ومزودة بموقف سيارات محروس في حي كوتييه أو غاسين."
-        : "Architecte en mutation à la recherche d'un appartement calme en étage élevé, baigné de lumière naturelle avec parking sécurisé à Gauthier ou Racine.";
-    }
-    if (req.id === 2) {
-      return lang === 'ar'
-        ? "مطلوب فيلا محفظة من طابق واحد مع إطلالة مفتوحة على جبال الأطلس وأشجار معمرة، على بعد أقل من 20 دقيقة من وسط المدينة."
-        : "Recherche villa titrée de plain-pied avec vue dégagée sur les montagnes de l'Atlas et arbres matures à moins de 20 min du centre-ville.";
-    }
-    return req.description;
-  };
 
   return (
     <div className="min-h-screen bg-[#f9f8f5] text-[#19221f] flex flex-col font-sans selection:bg-[#e2c1b1]">
@@ -215,6 +188,10 @@ export function App() {
         onOpenCreateListing={() => {
           if (!currentUser) setShowAuthModal(true);
           else setShowCreateListingModal(true);
+        }}
+        onOpenCreateRequest={() => {
+          if (!currentUser) setShowAuthModal(true);
+          else setShowCreateRequestModal(true);
         }}
         onLogout={handleLogout}
         onFilterByPurpose={(p) => {
@@ -384,6 +361,44 @@ export function App() {
 
         </section>
 
+        {/* Confidential Custom Property Request Section */}
+        <section id="custom-request" className="bg-[#ede8df] border-t border-[#ded7cb] py-16 lg:py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-white rounded-3xl p-8 sm:p-12 border border-[#ded7cb] shadow-morocco grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div className="lg:col-span-8">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f5ece6] border border-[#e8d2c4] text-[#bd6b46] text-xs font-semibold uppercase tracking-wider mb-3">
+                  <MessageSquarePlus className="w-3.5 h-3.5" />
+                  <span>{isRtl ? 'طلب عقاري خاص 100%' : 'Recherche Sur-Mesure Confidentielle'}</span>
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-serif font-bold text-[#19221f] leading-tight">
+                  {isRtl ? 'تبحث عن عقار مخصص في المغرب؟' : 'Vous cherchez un bien d’exception sur-mesure ?'}<br />
+                  <span className="italic font-normal text-[#bd6b46]">
+                    {isRtl ? 'اطرح طلبك مباشرة لفريق أطلسي' : 'Transmettez votre recherche directement à notre équipe'}
+                  </span>
+                </h2>
+                <p className="text-xs sm:text-sm text-stone-600 mt-3 max-w-xl leading-relaxed">
+                  {isRtl
+                    ? 'طلبك لا يُنشر علناً على الموقع. يتم إرسال مواصفاتك بسريّة تامّة إلى لوحة التحكم الخاصة بفريق أطلسي للبحث ومطابقة العقارات المناسبة لك.'
+                    : 'Votre demande reste 100% confidentielle et n’est pas publiée publiquement sur le site. Elle est transmise directement à notre console d’administration pour un accompagnement personnalisé par nos conseillers.'}
+                </p>
+              </div>
+
+              <div className="lg:col-span-4 flex justify-start lg:justify-end">
+                <button
+                  onClick={() => {
+                    if (!currentUser) setShowAuthModal(true);
+                    else setShowCreateRequestModal(true);
+                  }}
+                  className="px-6 py-4 rounded-2xl bg-[#1b2622] hover:bg-[#283631] text-white text-xs font-bold tracking-wider uppercase flex items-center gap-2.5 transition-all shadow-md active:scale-98 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 text-[#bd6b46]" />
+                  <span>{isRtl ? 'إرسال طلب مخصص' : 'Créer ma demande sur-mesure'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Editorial Philosophy Section */}
         <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-[#e7e2d8]">
           <div className="text-center max-w-2xl mx-auto mb-16">
@@ -503,7 +518,6 @@ export function App() {
           <CreateRequestModal
             onClose={() => setShowCreateRequestModal(false)}
             currentUser={currentUser}
-            onRequestCreated={handleRequestCreated}
             onShowToast={showToast}
             onOpenAuth={() => setShowAuthModal(true)}
           />
