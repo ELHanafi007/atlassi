@@ -510,6 +510,7 @@ export function App() {
             <button onClick={() => { setCity('Tangier'); setPurpose('ALL'); }} className="hover:text-white transition-colors cursor-pointer">{translateCity('Tangier')}</button>
             <button onClick={() => { setCity('Casablanca'); setPurpose('ALL'); }} className="hover:text-white transition-colors cursor-pointer">{translateCity('Casablanca')}</button>
             <button onClick={() => { setCity('Fes'); setPurpose('ALL'); }} className="hover:text-white transition-colors cursor-pointer">{translateCity('Fes')}</button>
+            <a href="/admin" className="hover:text-white transition-colors cursor-pointer text-[#bd6b46] font-medium">Admin</a>
             <a href="#top" className="text-[#bd6b46] hover:underline font-semibold flex items-center gap-1 cursor-pointer">
               <span>{t('footer.top')}</span> <ArrowUpRight className={`w-3.5 h-3.5 ${isRtl ? 'rotate-[-90deg]' : ''}`} />
             </a>

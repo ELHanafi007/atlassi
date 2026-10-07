@@ -5,7 +5,7 @@ import App from './App.jsx';
 import { LanguageProvider } from './lib/i18n.jsx';
 import AdminPage from './components/AdminPage.jsx';
 
-const isAdmin = window.location.pathname.startsWith('/admin');
+const isAdmin = window.location.pathname.toLowerCase().startsWith('/admin');
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
