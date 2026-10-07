@@ -365,7 +365,7 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
 
                   {/* Big WhatsApp Button */}
                   <a
-                    href={`https://wa.me/212760159495?text=${encodeURIComponent(
+                    href={`https://wa.me/212760159454?text=${encodeURIComponent(
                       `Bonjour Atlassi, je souhaite avoir plus d'informations sur la propriété : "${property.title}" (${property.city}).`
                     )}`}
                     target="_blank"
@@ -373,16 +373,16 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
                     className="w-full py-3.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-2.5 transition-all shadow-md active:scale-[0.98] cursor-pointer"
                   >
                     <WhatsAppIcon className="w-5 h-5 fill-white" />
-                    <span>{isRtl ? 'مراسلة عبر واتساب (0760159495)' : 'Contacter sur WhatsApp (0760159495)'}</span>
+                    <span>{isRtl ? 'مراسلة عبر واتساب (0760159454)' : 'Contacter sur WhatsApp (0760159454)'}</span>
                   </a>
 
                   {/* Direct Phone Call Button */}
                   <a
-                    href="tel:+212760159495"
+                    href="tel:+212760159454"
                     className="w-full py-3 px-4 rounded-xl bg-[#1b2622] hover:bg-[#283631] text-white text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-2.5 transition-all shadow-xs active:scale-[0.98] cursor-pointer"
                   >
                     <Phone className="w-4 h-4 text-[#bd6b46]" />
-                    <span>{isRtl ? 'اتصال مباشر: 07 60 15 94 95' : 'Appeler direct: 07 60 15 94 95'}</span>
+                    <span>{isRtl ? 'اتصال مباشر: 07 60 15 94 54' : 'Appeler direct: 07 60 15 94 54'}</span>
                   </a>
                 </div>
 

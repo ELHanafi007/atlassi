@@ -348,7 +348,7 @@ const ATLASSI_PUBLIC_SELLER = {
   id: 0,
   name: 'Équipe Atlassi',
   email: 'contact@atlassi.ma',
-  phone: '+212 522 000 000',
+  phone: '+212 760 159 454',
   phoneVerified: true
 };
 
