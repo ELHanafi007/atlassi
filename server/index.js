@@ -21,6 +21,28 @@ async function getPrisma() {
     const { PrismaNeon } = await import('@prisma/adapter-neon');
     const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
     prisma = new PrismaClient({ adapter });
+
+    // Seed Admin user if missing
+    try {
+      const adminExists = await prisma.user.findUnique({ where: { email: 'admin@atlassi.ma' } });
+      if (!adminExists) {
+        const salt = crypto.randomBytes(16).toString('hex');
+        const hash = crypto.scryptSync('atlassi2024', salt, 64).toString('hex');
+        await prisma.user.create({
+          data: {
+            name: 'Atlassi Admin',
+            email: 'admin@atlassi.ma',
+            phone: '+212 600 000 000',
+            password: `${salt}:${hash}`,
+            role: 'ADMIN',
+            phoneVerifiedAt: new Date()
+          }
+        });
+      }
+    } catch (seedErr) {
+      console.warn('Admin seed check skipped:', seedErr.message);
+    }
+
     return prisma;
   } catch (err) {
     console.warn('Prisma initialization skipped:', err.message);
@@ -228,13 +250,14 @@ app.post('/api/auth/login', async (req, res, next) => {
         }
       } catch (dbErr) {
         console.warn('Prisma query failed, falling back to dataStore:', dbErr.message);
-        user = store.findUserByEmail(normalizedEmail);
-        if (user) passwordValid = verifyPassword(password, user.password);
       }
-    } else {
-      user = store.findUserByEmail(normalizedEmail);
-      if (user) {
-        passwordValid = verifyPassword(password, user.password);
+    }
+
+    if (!user || !passwordValid) {
+      const storeUser = store.findUserByEmail(normalizedEmail);
+      if (storeUser && verifyPassword(password, storeUser.password)) {
+        user = storeUser;
+        passwordValid = true;
       }
     }
 
@@ -846,16 +869,19 @@ app.get('/api/admin/listings', requireAdmin, async (_req, res, next) => {
           include: {
             images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
             seller: { select: { id: true, name: true, email: true, phone: true, phoneVerifiedAt: true } },
-            _count: { select: { offers: true } }
+            _count: { select: { offers: true, contacts: true } }
           },
           orderBy: { createdAt: 'desc' }
         });
         const data = listings.map(l => {
-          const inquiriesCount = 0; // contactRequest doesn't have direct relation counted here
+          let displayStatus = l.status;
+          if (l.status === 'PAUSED') displayStatus = 'UNPUBLISHED';
+          if (l.status === 'DRAFT') displayStatus = 'PENDING';
           return {
             ...l,
+            status: displayStatus,
             owner: l.seller ? { id: l.seller.id, name: l.seller.name, email: l.seller.email, phone: l.seller.phone, phoneVerified: Boolean(l.seller.phoneVerifiedAt) } : null,
-            _count: { offers: l._count.offers, inquiries: inquiriesCount }
+            _count: { offers: l._count.offers, inquiries: l._count.contacts }
           };
         });
         return res.json({ data });
@@ -871,14 +897,21 @@ app.get('/api/admin/listings', requireAdmin, async (_req, res, next) => {
 app.patch('/api/admin/listings/:id/status', requireAdmin, async (req, res, next) => {
   try {
     const { status } = req.body;
+    let dbStatus = status;
+    if (status === 'UNPUBLISHED') dbStatus = 'PAUSED';
+    if (status === 'PENDING') dbStatus = 'DRAFT';
+
     const db = await getPrisma();
     if (db) {
       try {
         const listing = await db.listing.update({
           where: { id: Number(req.params.id) },
-          data: { status }
+          data: { status: dbStatus }
         });
-        return res.json({ data: listing });
+        let displayStatus = listing.status;
+        if (listing.status === 'PAUSED') displayStatus = 'UNPUBLISHED';
+        if (listing.status === 'DRAFT') displayStatus = 'PENDING';
+        return res.json({ data: { ...listing, status: displayStatus } });
       } catch (dbErr) {
         console.warn('Admin listing status Prisma error, falling back to store:', dbErr.message);
       }
