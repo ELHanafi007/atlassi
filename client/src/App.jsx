@@ -50,6 +50,7 @@ export function App() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [minBedrooms, setMinBedrooms] = useState('');
+  const [titleStatus, setTitleStatus] = useState('');
 
   // State: Modals & Overlays
   const [selectedProperty, setSelectedProperty] = useState(null);
@@ -104,6 +105,7 @@ export function App() {
       if (minPrice) params.minPrice = minPrice;
       if (maxPrice) params.maxPrice = maxPrice;
       if (minBedrooms) params.minBedrooms = minBedrooms;
+      if (titleStatus) params.titleStatus = titleStatus;
       if (searchQuery.trim()) params.search = searchQuery.trim();
 
       const res = await listingsApi.getAll(params);
@@ -114,7 +116,7 @@ export function App() {
     } finally {
       setLoading(false);
     }
-  }, [purpose, city, propertyType, sort, minPrice, maxPrice, minBedrooms, searchQuery, t]);
+  }, [purpose, city, propertyType, sort, minPrice, maxPrice, minBedrooms, titleStatus, searchQuery, t]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -154,6 +156,7 @@ export function App() {
     setMinPrice('');
     setMaxPrice('');
     setMinBedrooms('');
+    setTitleStatus('');
     setShowFavoritesOnly(false);
   };
 
@@ -242,6 +245,8 @@ export function App() {
           setMaxPrice={setMaxPrice}
           minBedrooms={minBedrooms}
           setMinBedrooms={setMinBedrooms}
+          titleStatus={titleStatus}
+          setTitleStatus={setTitleStatus}
           onReset={handleResetFilters}
         />
 

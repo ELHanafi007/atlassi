@@ -18,6 +18,8 @@ export function FilterBar({
   setMaxPrice,
   minBedrooms,
   setMinBedrooms,
+  titleStatus,
+  setTitleStatus,
   onReset
 }) {
   const { t, translateCity, translateType, isRtl } = useLanguage();
@@ -26,7 +28,7 @@ export function FilterBar({
   const rawCities = ['Laayoune'];
   const rawPropertyTypes = ['Apartment', 'Villa', 'House', 'Riad', 'Studio', 'Land'];
 
-  const hasActiveFilters = Boolean(city || propertyType || minPrice || maxPrice || minBedrooms || purpose !== 'ALL');
+  const hasActiveFilters = Boolean(city || propertyType || minPrice || maxPrice || minBedrooms || titleStatus || purpose !== 'ALL');
 
   return (
     <div className="w-full bg-[#f9f8f5] border-y border-[#e7e2d8] py-4 transition-all">
@@ -126,14 +128,14 @@ export function FilterBar({
             <button
               onClick={() => setDrawerOpen(!drawerOpen)}
               className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                drawerOpen || minBedrooms || minPrice || maxPrice
+                drawerOpen || minBedrooms || minPrice || maxPrice || titleStatus
                   ? 'bg-[#1b2622] text-[#f9f8f5] border-[#1b2622]'
                   : 'bg-white text-stone-700 border-[#ded7cb] hover:border-stone-400'
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>{t('filters.filtersButton')}</span>
-              {(minBedrooms || minPrice || maxPrice) && (
+              {(minBedrooms || minPrice || maxPrice || titleStatus) && (
                 <span className="w-1.5 h-1.5 rounded-full bg-[#bd6b46]" />
               )}
             </button>
@@ -220,6 +222,32 @@ export function FilterBar({
                   />
                 </div>
 
+                {/* Title Status */}
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1.5">
+                    {t('filters.titleStatusLabel')}
+                  </label>
+                  <div className="flex gap-1">
+                    {[{ val: '', label: t('filters.allTitleStatuses') }, { val: 'titled', label: t('filters.titled') }, { val: 'untitled', label: t('filters.untitled') }].map(({ val, label }) => {
+                      const active = titleStatus === val;
+                      return (
+                        <button
+                          key={val || 'all'}
+                          type="button"
+                          onClick={() => setTitleStatus(active && val ? '' : val)}
+                          className={`flex-1 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                            active
+                              ? 'bg-[#1b2622] text-white border-[#1b2622]'
+                              : 'bg-white border-[#ded7cb] text-stone-700 hover:bg-stone-50'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Clear Actions */}
                 <div className="flex items-end">
                   <button
@@ -227,6 +255,7 @@ export function FilterBar({
                       setMinBedrooms('');
                       setMinPrice('');
                       setMaxPrice('');
+                      setTitleStatus('');
                     }}
                     className="w-full py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
                   >

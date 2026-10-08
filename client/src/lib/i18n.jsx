@@ -96,6 +96,12 @@ export function LanguageProvider({ children }) {
     return map[amenity] || amenity;
   }, [lang]);
 
+  const translateTitleStatus = useCallback((status) => {
+    if (!status) return translations[lang].filters.titled;
+    const isUntitled = status.toLowerCase() === 'untitled';
+    return isUntitled ? translations[lang].filters.untitled : translations[lang].filters.titled;
+  }, [lang]);
+
   // Formatter for price with Moroccan currency
   const formatPrice = useCallback((price, purpose) => {
     if (price === null || price === undefined || isNaN(price)) return '';
@@ -124,10 +130,11 @@ export function LanguageProvider({ children }) {
       displayCity: translateCity(listing.city),
       displayType: translateType(listing.type),
       displayCondition: translateCondition(listing.condition),
+      displayTitleStatus: translateTitleStatus(listing.titleStatus),
       displayAmenities: listing.amenities?.map(translateAmenity) || [],
       displayPrice: formatPrice(listing.price, listing.purpose),
     };
-  }, [lang, translateCity, translateType, translateCondition, translateAmenity, formatPrice]);
+  }, [lang, translateCity, translateType, translateCondition, translateTitleStatus, translateAmenity, formatPrice]);
 
   const contextValue = useMemo(() => ({
     lang,
@@ -139,9 +146,10 @@ export function LanguageProvider({ children }) {
     translateType,
     translateCondition,
     translateAmenity,
+    translateTitleStatus,
     formatPrice,
     localizeListing,
-  }), [lang, setLang, isRtl, dir, t, translateCity, translateType, translateCondition, translateAmenity, formatPrice, localizeListing]);
+  }), [lang, setLang, isRtl, dir, t, translateCity, translateType, translateCondition, translateAmenity, translateTitleStatus, formatPrice, localizeListing]);
 
   return (
     <LanguageContext.Provider value={contextValue}>

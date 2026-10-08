@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '../lib/i18n';
 
 export function PropertyCard({ property, onOpen, isSaved, onToggleSave }) {
-  const { t, localizeListing, isRtl } = useLanguage();
+  const { t, localizeListing, translateTitleStatus, isRtl } = useLanguage();
   const localized = localizeListing(property);
 
   const primaryImage = property.images?.find((img) => img.isPrimary) || property.images?.[0] || {
@@ -82,6 +82,20 @@ export function PropertyCard({ property, onOpen, isSaved, onToggleSave }) {
               {localized.displayType}
             </span>
           </div>
+
+          {/* Title Status Badge */}
+          {property.titleStatus && (
+            <div className="mb-1.5">
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide ${
+                property.titleStatus === 'titled'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${property.titleStatus === 'titled' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                {translateTitleStatus(property.titleStatus)}
+              </span>
+            </div>
+          )}
 
           {/* Title */}
           <h3 className="text-base font-bold text-[#1b2622] group-hover:text-[#bd6b46] transition-colors leading-snug tracking-tight line-clamp-1">

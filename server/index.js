@@ -357,12 +357,13 @@ app.get('/api/listings', async (req, res, next) => {
   try {
     const db = await getPrisma();
     if (db) {
-      const { purpose, city, type, minPrice, maxPrice, search, sort } = req.query;
+      const { purpose, city, type, minPrice, maxPrice, titleStatus, search, sort } = req.query;
       const where = {
         status: 'PUBLISHED',
         ...(purpose && { purpose: purpose.toUpperCase() }),
         ...(city && { city: { contains: city, mode: 'insensitive' } }),
         ...(type && { type: type.toUpperCase() }),
+        ...(titleStatus && titleStatus !== 'ALL' && { titleStatus: titleStatus.toLowerCase() }),
         ...((minPrice || maxPrice) && {
           price: {
             ...(minPrice && { gte: Number(minPrice) }),
@@ -459,7 +460,8 @@ app.post('/api/listings', requireAuth, async (req, res, next) => {
       furnished,
       amenities = [],
       images = [],
-      instagramVideoUrl
+      instagramVideoUrl,
+      titleStatus = 'titled'
     } = req.body || {};
 
     if (!title || !description || !price || !purpose || !type || !city) {
@@ -489,6 +491,7 @@ app.post('/api/listings', requireAuth, async (req, res, next) => {
           furnished: Boolean(furnished),
           amenities: Array.isArray(amenities) ? amenities : [],
           instagramVideoUrl: instagramVideoUrl || null,
+          titleStatus: (titleStatus === 'untitled') ? 'untitled' : 'titled',
           status: 'DRAFT', // Requires Admin approval before publication
           sellerId: req.user.id,
           images: {

@@ -92,6 +92,7 @@ const INITIAL_LISTINGS = [
     condition: 'Excellent',
     furnished: true,
     amenities: ['Balcony', 'Private parking', 'Elevator', 'Air conditioning', 'High-speed fiber'],
+    titleStatus: 'titled',
     isFeatured: true,
     status: 'PUBLISHED',
     sellerId: 1,
@@ -125,6 +126,7 @@ const INITIAL_LISTINGS = [
     condition: 'New build',
     furnished: false,
     amenities: ['Private courtyard', 'Landscaped garden', 'Covered garage', 'Fireplace', 'Solar heating'],
+    titleStatus: 'titled',
     isFeatured: true,
     status: 'PUBLISHED',
     sellerId: 2,
@@ -157,6 +159,7 @@ const INITIAL_LISTINGS = [
     condition: 'Renovated',
     furnished: false,
     amenities: ['Private courtyard', 'Terrace', 'Fireplace', 'Covered garage', 'Gated security'],
+    titleStatus: 'untitled',
     isFeatured: true,
     status: 'PUBLISHED',
     sellerId: 3,
@@ -189,6 +192,7 @@ const INITIAL_LISTINGS = [
     condition: 'Restored heritage',
     furnished: true,
     amenities: ['Central patio', 'Rooftop terrace', 'Historic zellige', 'Traditional fountain'],
+    titleStatus: 'titled',
     isFeatured: false,
     status: 'PUBLISHED',
     sellerId: 1,
@@ -220,6 +224,7 @@ const INITIAL_LISTINGS = [
     condition: 'Brand new',
     furnished: true,
     amenities: ['Custom cabinetry', 'Elevator', 'Quiet street', 'Fiber internet ready'],
+    titleStatus: 'titled',
     isFeatured: false,
     status: 'PUBLISHED',
     sellerId: 2,
@@ -251,6 +256,7 @@ const INITIAL_LISTINGS = [
     condition: 'Excellent',
     furnished: true,
     amenities: ['Terrace', 'Private parking', 'Air conditioning', 'Fiber internet ready'],
+    titleStatus: 'untitled',
     isFeatured: true,
     status: 'PUBLISHED',
     sellerId: 3,
@@ -459,6 +465,10 @@ class DataStore {
     if (filters.minSurface) {
       result = result.filter(l => (l.surface || 0) >= Number(filters.minSurface));
     }
+    if (filters.titleStatus && filters.titleStatus !== 'ALL') {
+      const ts = filters.titleStatus.toLowerCase();
+      result = result.filter(l => (l.titleStatus || 'titled').toLowerCase() === ts);
+    }
     if (filters.search) {
       const q = filters.search.trim().toLowerCase();
       result = result.filter(l =>
@@ -530,6 +540,8 @@ class DataStore {
       condition: data.condition || 'Good',
       furnished: Boolean(data.furnished),
       amenities: Array.isArray(data.amenities) ? data.amenities : [],
+      instagramVideoUrl: data.instagramVideoUrl || null,
+      titleStatus: (data.titleStatus === 'untitled') ? 'untitled' : 'titled',
       isFeatured: false,
       status: 'PENDING',
       sellerId,

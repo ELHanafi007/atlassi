@@ -166,11 +166,11 @@ export function Hero({ searchQuery, setSearchQuery, onSelectCity, selectedCity, 
           >
             <div className="relative bg-white rounded-3xl p-3 border border-[#ded7ca] shadow-xl shadow-stone-900/10 overflow-hidden transition-all duration-300 hover:shadow-2xl">
               {/* Photo */}
-              <div className="relative h-96 sm:h-[430px] rounded-2xl overflow-hidden bg-stone-200">
+              <div className="relative h-96 sm:h-[430px] rounded-2xl overflow-hidden bg-[#f0ede8]">
                 <img
                   src="/media/founder/founder-hero.jpg"
                   alt="Atlassi Luxury Real Estate Founder"
-                  className="w-full h-full object-cover object-top transition-transform duration-700 ease-out hover:scale-103"
+                  className="w-full h-full object-contain transition-transform duration-700 ease-out hover:scale-103"
                 />
                 
                 {/* Badges */}

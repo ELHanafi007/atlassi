@@ -54,6 +54,7 @@ model Listing {
   furnished     Boolean        @default(false)
   amenities     String[]
   instagramVideoUrl String?
+  titleStatus   String?        @default("titled")
   isFeatured    Boolean        @default(false)
   seller        User           @relation(fields: [sellerId], references: [id])
   sellerId      Int

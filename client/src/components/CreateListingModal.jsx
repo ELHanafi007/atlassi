@@ -24,7 +24,8 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
     images: [
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=85&w=1200'
     ],
-    instagramVideoUrl: ''
+    instagramVideoUrl: '',
+    titleStatus: 'titled'
   });
 
   const [imageUrlInput, setImageUrlInput] = useState('');
@@ -325,6 +326,30 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
                     <option key={cond} value={cond}>{translateCondition(cond)}</option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            {/* Title Status (Statut Foncier) */}
+            <div>
+              <label className="block font-semibold text-stone-700 mb-1">
+                {t('createListing.titleStatusLabel')}
+              </label>
+              <div className="flex gap-2 bg-[#ede8df] p-1 rounded-xl">
+                {[
+                  { val: 'titled', labelKey: 'createListing.titled' },
+                  { val: 'untitled', labelKey: 'createListing.untitled' }
+                ].map(({ val, labelKey }) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, titleStatus: val })}
+                    className={`flex-1 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+                      formData.titleStatus === val ? 'bg-white text-[#1b2622] shadow-2xs' : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    {t(labelKey)}
+                  </button>
+                ))}
               </div>
             </div>
 
