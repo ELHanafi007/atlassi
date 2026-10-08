@@ -15,10 +15,6 @@ export function AuthModal({ onClose, onAuthSuccess, onShowToast }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const fillDemoAccount = () => {
-    setEmail('karim@atlassi.ma');
-    setPassword('password123');
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -217,19 +213,7 @@ export function AuthModal({ onClose, onAuthSuccess, onShowToast }) {
           </button>
         </form>
 
-        {/* Quick Demo Credentials Helper */}
-        {mode === 'login' && (
-          <div className="mt-5 pt-4 border-t border-[#ded7cb] flex items-center justify-between text-[11px] text-stone-500">
-            <span>{t('auth.demoPrompt')}</span>
-            <button
-              type="button"
-              onClick={fillDemoAccount}
-              className="text-[#bd6b46] hover:underline font-semibold cursor-pointer"
-            >
-              {t('auth.fillDemoBtn')}
-            </button>
-          </div>
-        )}
+
       </motion.div>
     </div>
   );
