@@ -4,6 +4,10 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
+import multer from 'multer';
 import { store, verifyPassword } from './dataStore.js';
 
 dotenv.config();
@@ -94,8 +98,8 @@ app.use('/api', generalLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-// Payload size limit
-app.use(express.json({ limit: '2mb' }));
+// Payload size limit — 50mb to accommodate base64 previews
+app.use(express.json({ limit: '50mb' }));
 
 // Helpers
 const publicUser = (user) => ({
@@ -1173,6 +1177,52 @@ app.get('/api/admin/users', requireAdmin, async (_req, res, next) => {
     return res.json({ data: users });
   } catch (error) { return next(error); }
 });
+
+/* ─── File Upload Route ──────────────────────────────────── */
+(function setupUpload() {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const uploadsDir = path.join(__dirname, 'uploads');
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+  // Serve uploaded files statically
+  app.use('/uploads', express.static(uploadsDir));
+
+  const storage = multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadsDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`);
+    }
+  });
+
+  const upload = multer({
+    storage,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB per file
+    fileFilter: (_req, file, cb) => {
+      const allowed = /^(image|video)\//;
+      if (allowed.test(file.mimetype)) return cb(null, true);
+      cb(new Error('Only images and videos are allowed'));
+    }
+  });
+
+  app.post('/api/upload', requireAuth, upload.array('files', 20), (req, res) => {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded' });
+    }
+    // Build public URLs — use CLIENT_URL base or relative path
+    const base = process.env.VITE_API_URL
+      ? process.env.VITE_API_URL.replace('/api', '')
+      : `http://localhost:${process.env.PORT || 5000}`;
+
+    const urls = req.files.map(f => ({
+      url: `${base}/uploads/${f.filename}`,
+      filename: f.filename,
+      mimetype: f.mimetype,
+      size: f.size
+    }));
+    return res.json({ data: urls });
+  });
+})();
 
 // Error handling middleware
 app.use((error, _req, res, _next) => {
