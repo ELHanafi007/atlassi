@@ -787,8 +787,12 @@ app.post('/api/requests', requireAuth, async (req, res, next) => {
   }
 });
 
-app.get('/api/requests', requireAdmin, async (req, res, next) => {
+app.get('/api/requests', requireAuth, async (req, res, next) => {
   try {
+    // Only admins can read the requests feed
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required.' });
+    }
     const db = await getPrisma();
     if (db) {
       const requests = await db.propertyRequest.findMany({
