@@ -22,7 +22,13 @@ import {
   Sparkles,
   Inbox,
   UserCheck,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Upload,
+  ImagePlus,
+  Video,
+  Trash2,
+  FilePlus2
 } from 'lucide-react';
 import { useLanguage } from '../lib/i18n';
 import { LanguageToggle } from './LanguageToggle';
@@ -948,14 +954,6 @@ function AdminLogin({ onLogin }) {
                 <span>Se connecter</span>
               )}
             </button>
-
-            <button
-              type="button"
-              onClick={() => { setEmail('admin@atlassi.ma'); setPassword('atlassi2024'); }}
-              className="w-full py-2 px-3 border border-dashed border-[#bd6b46]/50 bg-[#f5ece6]/40 hover:bg-[#f5ece6] text-[#bd6b46] font-semibold text-xs rounded-xl transition-colors cursor-pointer"
-            >
-              ✨ Remplir identifiants démo (Admin)
-            </button>
           </form>
 
           <p className="text-center text-[11px] text-[#7d8882] mt-6">
@@ -968,9 +966,478 @@ function AdminLogin({ onLogin }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   PUBLISH NEW PROPERTY TAB
+══════════════════════════════════════════════════════════════ */
+function NewListingTab({ token }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    type: 'apartment',
+    status: 'for_sale',
+    price: '',
+    location: 'Marrakech',
+    neighborhood: '',
+    surface: '',
+    bedrooms: '',
+    bathrooms: '',
+    titleStatus: 'titled',
+    description: '',
+    features: '',
+  });
+
+  const [images, setImages] = useState([]);
+  const [video, setVideo] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setImages((prev) => [...prev, ...files]);
+    }
+  };
+
+  const removeImage = (index) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleVideoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVideo(file);
+    }
+  };
+
+  const uploadFile = async (file) => {
+    const data = new FormData();
+    data.append('file', file);
+
+    const res = await fetch(`${API}/upload`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: data,
+    });
+
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.error || 'Erreur lors du téléversement du fichier');
+    }
+
+    const json = await res.json();
+    return json.url;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess(false);
+
+    if (images.length === 0) {
+      setError('Veuillez ajouter au moins une photo du bien.');
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      // Upload images
+      const imageUrls = [];
+      for (let i = 0; i < images.length; i++) {
+        setUploadProgress(`Téléversement photo ${i + 1}/${images.length}...`);
+        const url = await uploadFile(images[i]);
+        imageUrls.push(url);
+      }
+
+      // Upload video if present
+      let videoUrl = '';
+      if (video) {
+        setUploadProgress('Téléversement de la vidéo...');
+        videoUrl = await uploadFile(video);
+      }
+
+      setUploadProgress('Publication de l’annonce...');
+
+      const payload = {
+        title: formData.title,
+        type: formData.type,
+        status: formData.status,
+        price: Number(formData.price),
+        location: formData.location,
+        neighborhood: formData.neighborhood,
+        surface: Number(formData.surface),
+        bedrooms: formData.bedrooms ? Number(formData.bedrooms) : undefined,
+        bathrooms: formData.bathrooms ? Number(formData.bathrooms) : undefined,
+        titleStatus: formData.titleStatus,
+        description: formData.description,
+        features: formData.features
+          ? formData.features.split(',').map((f) => f.trim()).filter(Boolean)
+          : [],
+        images: imageUrls,
+        video: videoUrl || undefined,
+      };
+
+      const res = await fetch(`${API}/listings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || 'Impossible de créer l’annonce.');
+      }
+
+      setSuccess(true);
+      setFormData({
+        title: '',
+        type: 'apartment',
+        status: 'for_sale',
+        price: '',
+        location: 'Marrakech',
+        neighborhood: '',
+        surface: '',
+        bedrooms: '',
+        bathrooms: '',
+        titleStatus: 'titled',
+        description: '',
+        features: '',
+      });
+      setImages([]);
+      setVideo(null);
+    } catch (err) {
+      setError(err.message || 'Une erreur est survenue.');
+    } finally {
+      setUploading(false);
+      setUploadProgress('');
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#e5e0d8] shadow-xs p-6 sm:p-8 max-w-4xl mx-auto">
+      <div className="flex items-center gap-3 mb-6 pb-6 border-b border-[#e5e0d8]">
+        <div className="w-10 h-10 rounded-xl bg-[#bd6b46]/10 text-[#bd6b46] flex items-center justify-center">
+          <FilePlus2 className="w-5 h-5" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-[#19221f] font-serif">Publier un nouveau bien</h2>
+          <p className="text-xs text-[#7d8882]">
+            Ajoutez une nouvelle propriété au catalogue Atlassi avec photos et vidéo depuis votre appareil.
+          </p>
+        </div>
+      </div>
+
+      {success && (
+        <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium flex items-center gap-2">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          <span>L'annonce a été publiée avec succès sur la plateforme !</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-medium flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Basic Info */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Titre de l'annonce *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="ex: Appartement de Luxe au Cœur de Guéliz"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Type de bien *
+            </label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+            >
+              <option value="apartment">Appartement</option>
+              <option value="villa">Villa</option>
+              <option value="riad">Riad</option>
+              <option value="duplex">Duplex / Penthouse</option>
+              <option value="land">Terrain</option>
+              <option value="commercial">Local Commercial</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Statut Transaction *
+            </label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+            >
+              <option value="for_sale">À Vendre</option>
+              <option value="for_rent">À Louer</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Prix (MAD) *
+            </label>
+            <input
+              type="number"
+              required
+              min="0"
+              placeholder="ex: 2500000"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+              className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Statut Foncier *
+            </label>
+            <select
+              value={formData.titleStatus}
+              onChange={(e) => setFormData({ ...formData, titleStatus: e.target.value })}
+              className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+            >
+              <option value="titled">Titré / محفظة</option>
+              <option value="untitled">Non Titré / غير محفظة</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Ville / Localisation *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="ex: Marrakech"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Quartier / Zone
+            </label>
+            <input
+              type="text"
+              placeholder="ex: Guéliz, Palmeraie, Hivernage..."
+              value={formData.neighborhood}
+              onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
+              className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Surface (m²) *
+            </label>
+            <input
+              type="number"
+              required
+              min="1"
+              placeholder="ex: 120"
+              value={formData.surface}
+              onChange={(e) => setFormData({ ...formData, surface: e.target.value })}
+              className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Chambres
+            </label>
+            <input
+              type="number"
+              min="0"
+              placeholder="ex: 3"
+              value={formData.bedrooms}
+              onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value })}
+              className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Salles de bain
+            </label>
+            <input
+              type="number"
+              min="0"
+              placeholder="ex: 2"
+              value={formData.bathrooms}
+              onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value })}
+              className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+            />
+          </div>
+        </div>
+
+        {/* Media Upload Section */}
+        <div className="space-y-4 pt-4 border-t border-[#e5e0d8]">
+          <h3 className="text-sm font-bold text-[#19221f] flex items-center gap-2">
+            <ImagePlus className="w-4 h-4 text-[#bd6b46]" />
+            <span>Photos & Vidéo (Galerie / Fichiers)</span>
+          </h3>
+
+          {/* Photo upload picker */}
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Photos du bien *
+            </label>
+            <div className="flex items-center gap-3 flex-wrap">
+              <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-[#19221f] hover:bg-[#2c3a35] text-white text-xs font-semibold rounded-xl transition-all shadow-xs">
+                <Upload className="w-4 h-4" />
+                <span>Choisir des photos</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
+              <span className="text-xs text-[#7d8882]">
+                {images.length > 0 ? `${images.length} photo(s) sélectionnée(s)` : 'Aucune photo choisie'}
+              </span>
+            </div>
+
+            {/* Preview Selected Images */}
+            {images.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 mt-3">
+                {images.map((img, idx) => (
+                  <div key={idx} className="relative group rounded-xl overflow-hidden border border-[#e5e0d8] aspect-square bg-gray-100">
+                    <img
+                      src={URL.createObjectURL(img)}
+                      alt={`Aperçu ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-rose-600 text-white rounded-full transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Video upload picker */}
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Vidéo du bien (optionnel)
+            </label>
+            <div className="flex items-center gap-3">
+              <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] hover:border-[#bd6b46] text-[#19221f] text-xs font-semibold rounded-xl transition-all">
+                <Video className="w-4 h-4 text-[#bd6b46]" />
+                <span>{video ? 'Changer la vidéo' : 'Choisir une vidéo'}</span>
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoChange}
+                  className="hidden"
+                />
+              </label>
+              {video && (
+                <div className="flex items-center gap-2 text-xs text-[#19221f] font-medium bg-[#f5f2ed] px-3 py-1.5 rounded-lg border border-[#e5e0d8]">
+                  <span className="truncate max-w-[200px]">{video.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setVideo(null)}
+                    className="text-rose-600 hover:text-rose-800"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Description & Features */}
+        <div className="space-y-4 pt-4 border-t border-[#e5e0d8]">
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Description détaillée
+            </label>
+            <textarea
+              rows={4}
+              placeholder="Décrivez les atouts, l'agencement et l'environnement du bien..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
+              Équipements / Caractéristiques (séparés par des virgules)
+            </label>
+            <input
+              type="text"
+              placeholder="ex: Piscine, Garage, Climatisation, Jardin, Ascenseur"
+              value={formData.features}
+              onChange={(e) => setFormData({ ...formData, features: e.target.value })}
+              className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+            />
+          </div>
+        </div>
+
+        {/* Submit button */}
+        <div className="pt-4 border-t border-[#e5e0d8] flex items-center justify-end gap-3">
+          <button
+            type="submit"
+            disabled={uploading}
+            className="px-6 py-3 bg-[#bd6b46] hover:bg-[#a55a38] text-white text-sm font-semibold rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
+          >
+            {uploading ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>{uploadProgress || 'Traitement...'}</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                <span>Publier l'annonce</span>
+              </>
+            ) }
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
    DASHBOARD SHELL
 ══════════════════════════════════════════════════════════════ */
 const TABS = [
+  { id: 'publish', label: 'Publier un bien', icon: FilePlus2 },
   { id: 'listings', label: 'Annonces', icon: Building2 },
   { id: 'requests', label: 'Demandes', icon: ClipboardList },
   { id: 'offers', label: 'Offres', icon: MessageSquareQuote },
@@ -979,7 +1446,7 @@ const TABS = [
 ];
 
 function Dashboard({ token, admin, onLogout }) {
-  const [tab, setTab] = useState('listings');
+  const [tab, setTab] = useState('publish');
   const [stats, setStats] = useState(null);
   const { isRtl } = useLanguage();
 
@@ -1120,6 +1587,7 @@ function Dashboard({ token, admin, onLogout }) {
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
           >
+            {tab === 'publish' && <NewListingTab token={token} />}
             {tab === 'listings' && <ListingsTab token={token} />}
             {tab === 'requests' && <RequestsTab token={token} />}
             {tab === 'offers' && <OffersTab token={token} />}
