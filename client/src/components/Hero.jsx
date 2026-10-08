@@ -179,7 +179,7 @@ export function Hero({ searchQuery, setSearchQuery, onSelectCity, selectedCity, 
                   <span>{isRtl ? 'مؤسس أطلسي' : 'Fondateur Atlassi'}</span>
                 </div>
                 <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/atlasi.realty/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`absolute top-4 ${isRtl ? 'left-4' : 'right-4'} bg-[#E1306C] hover:bg-[#c1255b] text-white backdrop-blur-md px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wider flex items-center gap-1.5 transition-all shadow-md cursor-pointer`}
