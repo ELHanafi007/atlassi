@@ -5,7 +5,15 @@ import { useLanguage } from '../lib/i18n';
 
 export function Hero({ searchQuery, setSearchQuery, onSelectCity, selectedCity, onFeaturedClick }) {
   const { t, translateCity, isRtl } = useLanguage();
-  const rawCities = ['All', 'Marrakech', 'Tangier', 'Casablanca', 'Fes', 'Rabat', 'Agadir'];
+  const laayouneNeighborhoods = [
+    'All',
+    'Hay El Qods',
+    'Boulevard Makkah',
+    'Al Wifaq',
+    'Hay Dcheira',
+    'Hay El Fouarat',
+    'Boulevard Mohammed V'
+  ];
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -89,17 +97,17 @@ export function Hero({ searchQuery, setSearchQuery, onSelectCity, selectedCity, 
               </button>
             </form>
 
-            {/* Quick City Filters */}
+            {/* Quick Neighborhood Filters */}
             <div className="mt-6 flex items-center flex-wrap gap-2">
-              <span className="text-xs font-medium text-stone-500 me-1">{t('hero.popular')}</span>
-              {rawCities.map((c) => {
-                const isSelected = (c === 'All' && !selectedCity) || selectedCity === c;
+              <span className="text-xs font-medium text-stone-500 me-1">{t('hero.popularNeighborhoods')}</span>
+              {laayouneNeighborhoods.map((nh) => {
+                const isSelected = (nh === 'All' && !searchQuery) || searchQuery === nh;
                 return (
                   <button
-                    key={c}
+                    key={nh}
                     type="button"
                     onClick={() => {
-                      onSelectCity(c === 'All' ? '' : c);
+                      setSearchQuery(nh === 'All' ? '' : nh);
                       document.getElementById('discover')?.scrollIntoView({ behavior: 'smooth' });
                     }}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
@@ -108,7 +116,7 @@ export function Hero({ searchQuery, setSearchQuery, onSelectCity, selectedCity, 
                         : 'bg-white/80 border border-[#e5e0d8] text-[#525f59] hover:border-[#1b2622] hover:text-[#1b2622]'
                     }`}
                   >
-                    {translateCity(c)}
+                    {nh === 'All' ? (isRtl ? 'الكل' : 'Tous') : nh}
                   </button>
                 );
               })}

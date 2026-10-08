@@ -11,7 +11,7 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
     title: '',
     purpose: 'SALE',
     type: 'VILLA',
-    city: 'Marrakech',
+    city: 'Laayoune',
     neighborhood: '',
     price: '',
     bedrooms: '3',
@@ -32,7 +32,7 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const moroccanCities = ['Marrakech', 'Tangier', 'Casablanca', 'Fes', 'Rabat', 'Agadir', 'Essaouira', 'Chefchaouen'];
+  const moroccanCities = ['Laayoune'];
   const moroccanTypes = ['Villa', 'Riad', 'Apartment', 'House', 'Studio', 'Land'];
   const availableConditions = ['New build', 'Excellent', 'Renovated', 'Restored heritage'];
   const availableAmenities = [

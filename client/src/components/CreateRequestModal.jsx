@@ -10,7 +10,7 @@ export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onS
   const [formData, setFormData] = useState({
     purpose: 'BUY',
     type: 'VILLA',
-    city: 'Marrakech',
+    city: 'Laayoune',
     neighborhood: '',
     maxBudget: '',
     minBedrooms: '3',
@@ -21,7 +21,7 @@ export function CreateRequestModal({ onClose, currentUser, onRequestCreated, onS
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const moroccanCities = ['Marrakech', 'Tangier', 'Casablanca', 'Fes', 'Rabat', 'Agadir', 'Essaouira', 'Chefchaouen'];
+  const moroccanCities = ['Laayoune'];
   const moroccanTypes = ['Villa', 'Riad', 'Apartment', 'House', 'Studio', 'Land'];
 
   const handleSubmit = async (e) => {

@@ -33,11 +33,12 @@ export const translations = {
       headlinePrefix: 'مساحات تتنفس النور، ',
       headlineHighlight: 'الأصالة والسكينة.',
       subcopy: 'اكتشف رياضات أصلية، شققاً ساحلية عصرية وملاذات هادئة في سفوح الأطلس. تواصل مباشرة مع ملّاك مغاربة موثوقين وقدّم عروضك بشفافية تامة.',
-      searchPlaceholder: 'ابحث بالمدينة، الحي أو النمط (مثل: النخيل، رياض، شاطئ)...',
+      searchPlaceholder: 'ابحث بالحي أو نوع العقار (مثل: حي القدس، شارع مكة، فيلا)...',
       searchButton: 'بحث',
       popular: 'الأكثر طلباً:',
-      proofVerified: 'ملّاك مغاربة موثقون',
-      proofCities: '6 مدن ساحلية وتاريخية كبرى',
+      popularNeighborhoods: 'أحياء العيون:',
+      proofVerified: 'ملّاك موثقون في العيون',
+      proofCities: 'أرقى أحياء مدينة العيون',
       proofOffers: 'عروض تفاوضية مباشرة وشفافة',
       featuredBadge: 'عقار استثنائي',
       forSale: 'للبيع',
@@ -285,14 +286,7 @@ export const translations = {
     // Moroccan Cities Mapping
     cities: {
       'All': 'الكل',
-      'Marrakech': 'مراكش',
-      'Tangier': 'طنجة',
-      'Casablanca': 'الدار البيضاء',
-      'Fes': 'فاس',
-      'Rabat': 'الرباط',
-      'Agadir': 'أكادير',
-      'Essaouira': 'الصويرة',
-      'Chefchaouen': 'شفشاون',
+      'Laayoune': 'العيون',
     },
 
     // Property Types
@@ -389,11 +383,12 @@ export const translations = {
       headlinePrefix: 'Des demeures façonnées par la lumière, ',
       headlineHighlight: "l'artisanat & la sérénité.",
       subcopy: "Découvrez des riads authentiques, appartements côtiers contemporains et retraites secrètes dans l'Atlas. Échangez en direct avec des propriétaires marocains vérifiés et formulez vos offres en toute liberté.",
-      searchPlaceholder: 'Rechercher par ville, quartier ou style (ex: Palmeraie, Riad, Front de mer)...',
+      searchPlaceholder: 'Rechercher par quartier ou type (ex: Hay El Qods, Blvd Makkah, Villa)...',
       searchButton: 'Rechercher',
       popular: 'Populaire :',
-      proofVerified: 'Propriétaires marocains vérifiés',
-      proofCities: '6 cités côtières et impériales majeures',
+      popularNeighborhoods: 'Quartiers de Laâyoune :',
+      proofVerified: 'Propriétaires vérifiés à Laâyoune',
+      proofCities: 'Quartiers d\'exception à Laâyoune',
       proofOffers: 'Offres directes et transparentes',
       featuredBadge: "Propriété d'exception",
       forSale: 'À Vendre',
@@ -641,14 +636,7 @@ export const translations = {
     // Moroccan Cities Mapping
     cities: {
       'All': 'Toutes',
-      'Marrakech': 'Marrakech',
-      'Tangier': 'Tanger',
-      'Casablanca': 'Casablanca',
-      'Fes': 'Fès',
-      'Rabat': 'Rabat',
-      'Agadir': 'Agadir',
-      'Essaouira': 'Essaouira',
-      'Chefchaouen': 'Chefchaouen',
+      'Laayoune': 'Laâyoune',
     },
 
     // Property Types

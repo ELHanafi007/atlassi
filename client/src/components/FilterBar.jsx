@@ -23,7 +23,7 @@ export function FilterBar({
   const { t, translateCity, translateType, isRtl } = useLanguage();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const rawCities = ['Marrakech', 'Tangier', 'Casablanca', 'Fes', 'Rabat', 'Agadir', 'Essaouira', 'Chefchaouen'];
+  const rawCities = ['Laayoune'];
   const rawPropertyTypes = ['Apartment', 'Villa', 'House', 'Riad', 'Studio', 'Land'];
 
   const hasActiveFilters = Boolean(city || propertyType || minPrice || maxPrice || minBedrooms || purpose !== 'ALL');
