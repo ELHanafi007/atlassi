@@ -209,6 +209,7 @@ export function App() {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           selectedCity={city}
+          listings={listings}
           onSelectCity={(selected) => {
             setCity(selected);
             setShowFavoritesOnly(false);
