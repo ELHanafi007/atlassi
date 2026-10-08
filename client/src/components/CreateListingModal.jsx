@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Plus, Trash2, ArrowUpRight, AlertCircle, Check } from 'lucide-react';
+import { X, Plus, Trash2, ArrowUpRight, AlertCircle, Check, CheckCircle2 } from 'lucide-react';
 import { listingsApi } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 
@@ -30,6 +30,7 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const moroccanCities = ['Marrakech', 'Tangier', 'Casablanca', 'Fes', 'Rabat', 'Agadir', 'Essaouira', 'Chefchaouen'];
   const moroccanTypes = ['Villa', 'Riad', 'Apartment', 'House', 'Studio', 'Land'];
@@ -102,9 +103,15 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
       };
 
       const result = await listingsApi.create(payload);
-      onShowToast({ type: 'success', message: t('toasts.propertyPublished') });
-      onListingCreated(result.data);
-      onClose();
+      
+      const isAdmin = currentUser?.role === 'ADMIN';
+      if (isAdmin) {
+        onShowToast({ type: 'success', message: t('toasts.propertyPublished') });
+        if (onListingCreated) onListingCreated(result.data);
+        onClose();
+      } else {
+        setSuccess(true);
+      }
     } catch (err) {
       setError(err.message || (isRtl ? 'فشل نشر العقار.' : 'Échec de la publication de la propriété.'));
     } finally {
@@ -134,7 +141,33 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
           <X className="w-5 h-5" />
         </button>
 
-        <div className="overflow-y-auto pr-1">
+        {success ? (
+          <div className="py-10 text-center flex flex-col items-center my-auto">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-5">
+              <CheckCircle2 className="w-9 h-9" />
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#1b2622] mb-3">
+              {isRtl ? 'تم استلام عرض العقار بنجاح' : 'Annonce reçue avec succès !'}
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-600 max-w-md mb-4 leading-relaxed">
+              {isRtl
+                ? 'شكراً لك! تم إرسال عقارك لمراجعة فريق أطلسي. سيتم النشر باسم أطلسي بعد الموافقة عليه.'
+                : 'Merci ! Votre bien a été soumis à notre équipe. Après vérification par l\'équipe Atlassi, il sera publié sous le nom d\'Atlassi.'}
+            </p>
+            <p className="text-xs text-[#bd6b46] font-semibold mb-8">
+              {isRtl
+                ? 'سيتواصل معك فريق أطلسي قريباً لمتابعة الطلب.'
+                : 'L\'équipe Atlassi vous contactera très prochainement.'}
+            </p>
+            <button
+              onClick={onClose}
+              className="px-8 py-3 rounded-full bg-[#1b2622] hover:bg-[#2a3832] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md cursor-pointer"
+            >
+              {isRtl ? 'إغلاق' : 'Fermer'}
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-y-auto pr-1">
           <div className="mb-6">
             <span className="text-[11px] font-bold tracking-wider text-[#bd6b46] block mb-1">
               {t('createListing.kicker')}
@@ -422,6 +455,7 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
 
           </form>
         </div>
+        )}
       </motion.div>
     </div>
   );
