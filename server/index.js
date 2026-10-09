@@ -444,32 +444,34 @@ app.get('/api/listings/:id', async (req, res, next) => {
 
 app.post('/api/listings', requireAuth, async (req, res, next) => {
   try {
-    const {
-      title,
-      description,
-      price,
-      purpose,
-      type,
-      city,
-      neighborhood,
-      location,
-      bedrooms,
-      bathrooms,
-      livingRooms,
-      kitchens,
-      floors,
-      propertyFloor,
-      surface,
-      condition,
-      furnished,
-      amenities = [],
-      images = [],
-      instagramVideoUrl,
-      titleStatus = 'titled'
-    } = req.body || {};
+    const body = req.body || {};
+    const title = body.title;
+    const description = body.description || '';
+    const price = body.price;
+    const rawPurpose = body.purpose || body.status;
+    const purpose = (rawPurpose === 'for_rent' || rawPurpose === 'RENT') ? 'RENT' : 'SALE';
+    const type = (body.type || 'APARTMENT').toUpperCase();
+    const city = body.city || body.location || 'Marrakech';
+    const location = body.location || body.neighborhood || city;
+    const neighborhood = body.neighborhood || null;
+    const bedrooms = body.bedrooms ? Number(body.bedrooms) : null;
+    const bathrooms = body.bathrooms ? Number(body.bathrooms) : null;
+    const livingRooms = body.livingRooms ? Number(body.livingRooms) : null;
+    const kitchens = body.kitchens ? Number(body.kitchens) : null;
+    const floors = body.floors ? Number(body.floors) : null;
+    const propertyFloor = body.propertyFloor ? Number(body.propertyFloor) : null;
+    const surface = body.surface ? Number(body.surface) : null;
+    const condition = body.condition || 'Good';
+    const furnished = Boolean(body.furnished);
+    const amenities = Array.isArray(body.amenities) ? body.amenities : (Array.isArray(body.features) ? body.features : []);
+    const instagramVideoUrl = body.instagramVideoUrl || body.video || null;
+    const titleStatus = (body.titleStatus === 'untitled') ? 'untitled' : 'titled';
+    const images = Array.isArray(body.images) ? body.images : [];
+    const isUserAdmin = req.user?.role === 'ADMIN';
+    const listingStatus = (isUserAdmin || body.status === 'PUBLISHED') ? 'PUBLISHED' : 'DRAFT';
 
-    if (!title || !description || !price || !purpose || !type || !city) {
-      return res.status(400).json({ error: 'Title, description, price, purpose, type, and city are required.' });
+    if (!title || price == null || price === '') {
+      return res.status(400).json({ error: 'Title and price are required.' });
     }
 
     const db = await getPrisma();
@@ -479,28 +481,28 @@ app.post('/api/listings', requireAuth, async (req, res, next) => {
           title: title.trim(),
           description: description.trim(),
           price: Number(price),
-          purpose: purpose.toUpperCase(),
-          type: type.toUpperCase(),
+          purpose: purpose,
+          type: type,
           city,
           neighborhood: neighborhood || null,
-          location: location || neighborhood || city,
-          bedrooms: bedrooms ? Number(bedrooms) : null,
-          bathrooms: bathrooms ? Number(bathrooms) : null,
-          livingRooms: livingRooms ? Number(livingRooms) : null,
-          kitchens: kitchens ? Number(kitchens) : null,
-          floors: floors ? Number(floors) : null,
-          propertyFloor: propertyFloor ? Number(propertyFloor) : null,
-          surface: surface ? Number(surface) : null,
-          condition: condition || 'Good',
-          furnished: Boolean(furnished),
-          amenities: Array.isArray(amenities) ? amenities : [],
-          instagramVideoUrl: instagramVideoUrl || null,
-          titleStatus: (titleStatus === 'untitled') ? 'untitled' : 'titled',
-          status: 'DRAFT', // Requires Admin approval before publication
+          location: location,
+          bedrooms,
+          bathrooms,
+          livingRooms,
+          kitchens,
+          floors,
+          propertyFloor,
+          surface,
+          condition,
+          furnished,
+          amenities,
+          instagramVideoUrl,
+          titleStatus,
+          status: listingStatus,
           sellerId: req.user.id,
           images: {
             create: images.map((url, idx) => ({
-              url: typeof url === 'string' ? url : url.url,
+              url: typeof url === 'string' ? url : (url.url || ''),
               sortOrder: idx,
               isPrimary: idx === 0
             }))
@@ -510,15 +512,33 @@ app.post('/api/listings', requireAuth, async (req, res, next) => {
       });
       return res.status(201).json({
         data: { ...listing, seller: ATLASSI_PUBLIC_SELLER },
-        message: "Votre annonce a été soumise avec succès ! Elle sera examinée et publiée par l'équipe Atlassi."
+        message: isUserAdmin
+          ? "Votre annonce a été publiée avec succès !"
+          : "Votre annonce a été soumise avec succès ! Elle sera examinée et publiée par l'équipe Atlassi."
       });
     }
 
-    const created = store.createListing(req.body, req.user.id);
+    const created = store.createListing({
+      ...req.body,
+      title,
+      description,
+      price,
+      purpose,
+      city,
+      location,
+      type,
+      amenities,
+      instagramVideoUrl,
+      titleStatus,
+      status: listingStatus
+    }, req.user.id);
+
     return res.status(201).json({
       data: { ...created, seller: ATLASSI_PUBLIC_SELLER },
       meta: { mode: 'persistent-store' },
-      message: "Votre annonce a été soumise avec succès ! Elle sera examinée et publiée par l'équipe Atlassi."
+      message: isUserAdmin
+        ? "Votre annonce a été publiée avec succès !"
+        : "Votre annonce a été soumise avec succès ! Elle sera examinée et publiée par l'équipe Atlassi."
     });
   } catch (error) {
     return next(error);
@@ -991,6 +1011,23 @@ app.patch('/api/admin/listings/:id/featured', requireAdmin, async (req, res, nex
   } catch (error) { return next(error); }
 });
 
+app.delete('/api/admin/listings/:id', requireAdmin, async (req, res, next) => {
+  try {
+    const db = await getPrisma();
+    if (db) {
+      try {
+        await db.listing.delete({ where: { id: Number(req.params.id) } });
+        return res.json({ data: { success: true } });
+      } catch (dbErr) {
+        console.warn('Admin listing delete Prisma error, falling back to store:', dbErr.message);
+      }
+    }
+    const success = store.adminDeleteListing(req.params.id);
+    if (!success) return res.status(404).json({ error: 'Listing not found.' });
+    return res.json({ data: { success: true } });
+  } catch (error) { return next(error); }
+});
+
 app.get('/api/admin/requests', requireAdmin, async (_req, res, next) => {
   try {
     const db = await getPrisma();
@@ -1181,13 +1218,18 @@ app.get('/api/admin/users', requireAdmin, async (_req, res, next) => {
 /* ─── File Upload Route ──────────────────────────────────── */
 (function setupUpload() {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const uploadsDir = path.join(__dirname, 'uploads');
-  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+  const uploadsDir = isServerless ? path.join('/tmp', 'atlassi-uploads') : path.join(__dirname, 'uploads');
+  try {
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  } catch (err) {
+    console.warn('Could not create uploads directory:', err.message);
+  }
 
   // Serve uploaded files statically
   app.use('/uploads', express.static(uploadsDir));
 
-  const storage = multer.diskStorage({
+  const diskStorage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadsDir),
     filename: (_req, file, cb) => {
       const ext = path.extname(file.originalname).toLowerCase();
@@ -1196,7 +1238,7 @@ app.get('/api/admin/users', requireAdmin, async (_req, res, next) => {
   });
 
   const upload = multer({
-    storage,
+    storage: diskStorage,
     limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB per file
     fileFilter: (_req, file, cb) => {
       const allowed = /^(image|video)\//;
@@ -1205,22 +1247,31 @@ app.get('/api/admin/users', requireAdmin, async (_req, res, next) => {
     }
   });
 
-  app.post('/api/upload', requireAuth, upload.array('files', 20), (req, res) => {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No files uploaded' });
-    }
-    // Build public URLs — use CLIENT_URL base or relative path
-    const base = process.env.VITE_API_URL
-      ? process.env.VITE_API_URL.replace('/api', '')
-      : `http://localhost:${process.env.PORT || 5000}`;
+  app.post('/api/upload', requireAuth, (req, res, next) => {
+    upload.any()(req, res, (err) => {
+      if (err) {
+        console.error('Upload Error:', err);
+        return res.status(400).json({ error: err.message || 'Error uploading file' });
+      }
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'No files uploaded' });
+      }
+      const relativeUrls = req.files.map(f => {
+        if (f.filename) {
+          return `/uploads/${f.filename}`;
+        }
+        if (f.buffer) {
+          return `data:${f.mimetype};base64,${f.buffer.toString('base64')}`;
+        }
+        return '';
+      }).filter(Boolean);
 
-    const urls = req.files.map(f => ({
-      url: `${base}/uploads/${f.filename}`,
-      filename: f.filename,
-      mimetype: f.mimetype,
-      size: f.size
-    }));
-    return res.json({ data: urls });
+      return res.json({
+        url: relativeUrls[0],
+        urls: relativeUrls,
+        data: relativeUrls.map(u => ({ url: u }))
+      });
+    });
   });
 })();
 

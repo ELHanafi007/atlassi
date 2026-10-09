@@ -31,274 +31,12 @@ const INITIAL_USERS = [
     role: 'ADMIN',
     phoneVerifiedAt: new Date('2026-01-01T00:00:00Z').toISOString(),
     createdAt: new Date('2026-01-01T00:00:00Z').toISOString()
-  },
-  {
-    id: 1,
-    name: 'Karim Bennani',
-    email: 'karim@atlassi.ma',
-    phone: '+212 661 234 567',
-    password: hashPassword('password123'),
-    role: 'USER',
-    phoneVerifiedAt: new Date('2026-01-15T10:00:00Z').toISOString(),
-    createdAt: new Date('2026-01-10T09:00:00Z').toISOString()
-  },
-  {
-    id: 2,
-    name: 'Yasmine Lahlou',
-    email: 'yasmine@atlassi.ma',
-    phone: '+212 662 987 654',
-    password: hashPassword('password123'),
-    role: 'USER',
-    phoneVerifiedAt: new Date('2026-01-20T14:30:00Z').toISOString(),
-    createdAt: new Date('2026-01-12T11:00:00Z').toISOString()
-  },
-  {
-    id: 3,
-    name: 'Taha El Alami',
-    email: 'taha@atlassi.ma',
-    phone: '+212 663 555 123',
-    password: hashPassword('password123'),
-    role: 'USER',
-    phoneVerifiedAt: new Date('2026-02-01T08:15:00Z').toISOString(),
-    createdAt: new Date('2026-01-28T16:20:00Z').toISOString()
   }
 ];
 
-const INITIAL_LISTINGS = [
-  {
-    id: 1,
-    title: 'Light-filled apartment on Boulevard Makkah',
-    description: 'A calm, generously proportioned residence with an expansive terrace, sun-drenched living areas, and modern high-end finishes. Located along Boulevard Makkah in Laayoune.',
-    price: 6500,
-    priceLabel: 'MAD / month',
-    purpose: 'RENT',
-    type: 'APARTMENT',
-    location: 'Boulevard Makkah',
-    city: 'Laayoune',
-    neighborhood: 'Boulevard Makkah',
-    images: [
-      { id: 101, url: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=85&w=1400', isPrimary: true, sortOrder: 0 },
-      { id: 102, url: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=85&w=1400', isPrimary: false, sortOrder: 1 },
-      { id: 103, url: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=85&w=1400', isPrimary: false, sortOrder: 2 },
-      { id: 104, url: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&q=85&w=1400', isPrimary: false, sortOrder: 3 }
-    ],
-    bedrooms: 3,
-    bathrooms: 2,
-    livingRooms: 1,
-    kitchens: 1,
-    floors: 1,
-    propertyFloor: 2,
-    surface: 145,
-    condition: 'Excellent',
-    furnished: true,
-    amenities: ['Balcony', 'Private parking', 'Elevator', 'Air conditioning', 'High-speed fiber'],
-    titleStatus: 'titled',
-    isFeatured: true,
-    status: 'PUBLISHED',
-    sellerId: 1,
-    createdAt: new Date('2026-03-01T12:00:00Z').toISOString(),
-    updatedAt: new Date('2026-03-01T12:00:00Z').toISOString()
-  },
-  {
-    id: 2,
-    title: 'Contemporary luxury villa in Hay El Qods',
-    description: 'A spacious modern villa featuring elegant Moroccan architecture, landscaped private courtyard, and roof terrace in the peaceful Hay El Qods district of Laayoune.',
-    price: 3200000,
-    priceLabel: 'MAD',
-    purpose: 'SALE',
-    type: 'VILLA',
-    location: 'Hay El Qods',
-    city: 'Laayoune',
-    neighborhood: 'Hay El Qods',
-    images: [
-      { id: 201, url: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&q=85&w=1400', isPrimary: true, sortOrder: 0 },
-      { id: 202, url: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&q=85&w=1400', isPrimary: false, sortOrder: 1 },
-      { id: 203, url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=85&w=1400', isPrimary: false, sortOrder: 2 },
-      { id: 204, url: 'https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?auto=format&fit=crop&q=85&w=1400', isPrimary: false, sortOrder: 3 }
-    ],
-    bedrooms: 5,
-    bathrooms: 4,
-    livingRooms: 2,
-    kitchens: 1,
-    floors: 2,
-    propertyFloor: null,
-    surface: 360,
-    condition: 'New build',
-    furnished: false,
-    amenities: ['Private courtyard', 'Landscaped garden', 'Covered garage', 'Fireplace', 'Solar heating'],
-    titleStatus: 'titled',
-    isFeatured: true,
-    status: 'PUBLISHED',
-    sellerId: 2,
-    createdAt: new Date('2026-03-05T09:30:00Z').toISOString(),
-    updatedAt: new Date('2026-03-05T09:30:00Z').toISOString()
-  },
-  {
-    id: 3,
-    title: 'Architect-designed house in Al Wifaq',
-    description: 'A modern family home in the growing Al Wifaq district. Features multiple living salons, private courtyard, and refined interior ironwork.',
-    price: 2450000,
-    priceLabel: 'MAD',
-    purpose: 'SALE',
-    type: 'HOUSE',
-    location: 'Quartier Al Wifaq',
-    city: 'Laayoune',
-    neighborhood: 'Al Wifaq',
-    images: [
-      { id: 301, url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=85&w=1400', isPrimary: true, sortOrder: 0 },
-      { id: 302, url: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=85&w=1400', isPrimary: false, sortOrder: 1 },
-      { id: 303, url: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&q=85&w=1400', isPrimary: false, sortOrder: 2 }
-    ],
-    bedrooms: 4,
-    bathrooms: 3,
-    livingRooms: 2,
-    kitchens: 1,
-    floors: 2,
-    propertyFloor: null,
-    surface: 280,
-    condition: 'Renovated',
-    furnished: false,
-    amenities: ['Private courtyard', 'Terrace', 'Fireplace', 'Covered garage', 'Gated security'],
-    titleStatus: 'untitled',
-    isFeatured: true,
-    status: 'PUBLISHED',
-    sellerId: 3,
-    createdAt: new Date('2026-03-08T15:45:00Z').toISOString(),
-    updatedAt: new Date('2026-03-08T15:45:00Z').toISOString()
-  },
-  {
-    id: 4,
-    title: 'Traditional house with spacious patio in Hay Dcheira',
-    description: 'A authentic Moroccan multi-level house in Hay Dcheira featuring central open patio, traditional zellige tiles, and rooftop solarium.',
-    price: 1850000,
-    priceLabel: 'MAD',
-    purpose: 'SALE',
-    type: 'HOUSE',
-    location: 'Hay Dcheira',
-    city: 'Laayoune',
-    neighborhood: 'Hay Dcheira',
-    images: [
-      { id: 401, url: 'https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&q=85&w=1400', isPrimary: true, sortOrder: 0 },
-      { id: 402, url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=85&w=1400', isPrimary: false, sortOrder: 1 },
-      { id: 403, url: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&q=85&w=1400', isPrimary: false, sortOrder: 2 }
-    ],
-    bedrooms: 4,
-    bathrooms: 3,
-    livingRooms: 2,
-    kitchens: 1,
-    floors: 2,
-    propertyFloor: null,
-    surface: 240,
-    condition: 'Restored heritage',
-    furnished: true,
-    amenities: ['Central patio', 'Rooftop terrace', 'Historic zellige', 'Traditional fountain'],
-    titleStatus: 'titled',
-    isFeatured: false,
-    status: 'PUBLISHED',
-    sellerId: 1,
-    createdAt: new Date('2026-03-11T11:20:00Z').toISOString(),
-    updatedAt: new Date('2026-03-11T11:20:00Z').toISOString()
-  },
-  {
-    id: 5,
-    title: 'Sunlit studio on Boulevard Mohammed V',
-    description: 'An architectural studio space flooded with natural light along Boulevard Mohammed V. Fully furnished with custom woodwork and modern bathroom.',
-    price: 3500,
-    priceLabel: 'MAD / month',
-    purpose: 'RENT',
-    type: 'STUDIO',
-    location: 'Boulevard Mohammed V',
-    city: 'Laayoune',
-    neighborhood: 'Boulevard Mohammed V',
-    images: [
-      { id: 501, url: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&q=85&w=1400', isPrimary: true, sortOrder: 0 },
-      { id: 502, url: 'https://images.unsplash.com/photo-1502005229762-ee1b2b8ab00f?auto=format&fit=crop&q=85&w=1400', isPrimary: false, sortOrder: 1 }
-    ],
-    bedrooms: 1,
-    bathrooms: 1,
-    livingRooms: 1,
-    kitchens: 1,
-    floors: 1,
-    propertyFloor: 2,
-    surface: 55,
-    condition: 'Brand new',
-    furnished: true,
-    amenities: ['Custom cabinetry', 'Elevator', 'Quiet street', 'Fiber internet ready'],
-    titleStatus: 'titled',
-    isFeatured: false,
-    status: 'PUBLISHED',
-    sellerId: 2,
-    createdAt: new Date('2026-03-14T08:40:00Z').toISOString(),
-    updatedAt: new Date('2026-03-14T08:40:00Z').toISOString()
-  },
-  {
-    id: 6,
-    title: 'Spacious 3-bedroom apartment in Hay El Fouarat',
-    description: 'A luminous apartment on a high floor with double salon and master suite in Hay El Fouarat.',
-    price: 4500,
-    priceLabel: 'MAD / month',
-    purpose: 'RENT',
-    type: 'APARTMENT',
-    location: 'Hay El Fouarat',
-    city: 'Laayoune',
-    neighborhood: 'Hay El Fouarat',
-    images: [
-      { id: 601, url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=85&w=1400', isPrimary: true, sortOrder: 0 },
-      { id: 602, url: 'https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&q=85&w=1400', isPrimary: false, sortOrder: 1 }
-    ],
-    bedrooms: 3,
-    bathrooms: 2,
-    livingRooms: 1,
-    kitchens: 1,
-    floors: 1,
-    propertyFloor: 3,
-    surface: 130,
-    condition: 'Excellent',
-    furnished: true,
-    amenities: ['Terrace', 'Private parking', 'Air conditioning', 'Fiber internet ready'],
-    titleStatus: 'untitled',
-    isFeatured: true,
-    status: 'PUBLISHED',
-    sellerId: 3,
-    createdAt: new Date('2026-03-16T17:10:00Z').toISOString(),
-    updatedAt: new Date('2026-03-16T17:10:00Z').toISOString()
-  }
-];
+const INITIAL_LISTINGS = [];
 
-const INITIAL_REQUESTS = [
-  {
-    id: 1,
-    purpose: 'RENT',
-    type: 'APARTMENT',
-    city: 'Laayoune',
-    neighborhood: 'Boulevard Makkah',
-    maxBudget: 6000,
-    minBedrooms: 2,
-    minBathrooms: 1,
-    minSurface: 90,
-    amenities: ['Balcony', 'Parking'],
-    description: 'Professional seeking quiet apartment with good natural light near Boulevard Makkah.',
-    status: 'ACTIVE',
-    requesterId: 1,
-    createdAt: new Date('2026-03-18T10:00:00Z').toISOString()
-  },
-  {
-    id: 2,
-    purpose: 'SALE',
-    type: 'VILLA',
-    city: 'Laayoune',
-    neighborhood: 'Hay El Qods',
-    maxBudget: 3500000,
-    minBedrooms: 4,
-    minBathrooms: 3,
-    minSurface: 300,
-    amenities: ['Courtyard', 'Garage'],
-    description: 'Looking for a titled villa with garage and courtyard in Hay El Qods.',
-    status: 'ACTIVE',
-    requesterId: 2,
-    createdAt: new Date('2026-03-20T14:15:00Z').toISOString()
-  }
-];
+const INITIAL_REQUESTS = [];
 
 class DataStore {
   constructor() {
@@ -518,16 +256,23 @@ class DataStore {
       ? data.images.map((img, idx) => typeof img === 'string' ? { id: Date.now() + idx, url: img, isPrimary: idx === 0, sortOrder: idx } : img)
       : [{ id: Date.now(), url: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=85&w=1400', isPrimary: true, sortOrder: 0 }];
 
+    const seller = this.findUserById(sellerId);
+    const rawPurpose = data.purpose || data.status;
+    const purpose = (rawPurpose === 'for_rent' || rawPurpose === 'RENT') ? 'RENT' : 'SALE';
+    const city = data.city || data.location || 'Marrakech';
+    const location = data.location || data.neighborhood || city;
+    const isApproved = (seller?.role === 'ADMIN' || data.status === 'PUBLISHED');
+
     const listing = {
       id: nextId,
-      title: data.title.trim(),
-      description: data.description.trim(),
+      title: data.title ? data.title.trim() : 'Propriété Atlassi',
+      description: data.description ? data.description.trim() : '',
       price: Number(data.price),
-      priceLabel: data.purpose === 'RENT' ? 'MAD / month' : 'MAD',
-      purpose: data.purpose.toUpperCase(),
-      type: data.type.toUpperCase(),
-      location: data.location || data.neighborhood || data.city,
-      city: data.city,
+      priceLabel: purpose === 'RENT' ? 'MAD / month' : 'MAD',
+      purpose: purpose,
+      type: (data.type || 'APARTMENT').toUpperCase(),
+      location: location,
+      city: city,
       neighborhood: data.neighborhood || null,
       images: formattedImages,
       bedrooms: data.bedrooms ? Number(data.bedrooms) : null,
@@ -539,11 +284,12 @@ class DataStore {
       surface: data.surface ? Number(data.surface) : null,
       condition: data.condition || 'Good',
       furnished: Boolean(data.furnished),
-      amenities: Array.isArray(data.amenities) ? data.amenities : [],
-      instagramVideoUrl: data.instagramVideoUrl || null,
+      amenities: Array.isArray(data.amenities) ? data.amenities : (Array.isArray(data.features) ? data.features : []),
+      instagramVideoUrl: data.instagramVideoUrl || data.video || null,
+      video: data.video || data.instagramVideoUrl || null,
       titleStatus: (data.titleStatus === 'untitled') ? 'untitled' : 'titled',
-      isFeatured: false,
-      status: 'PENDING',
+      isFeatured: Boolean(data.isFeatured),
+      status: isApproved ? 'PUBLISHED' : (data.status || 'PENDING'),
       sellerId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -845,6 +591,14 @@ class DataStore {
     listing.updatedAt = new Date().toISOString();
     this.save();
     return listing;
+  }
+
+  adminDeleteListing(listingId) {
+    const idx = this.data.listings.findIndex(l => l.id === Number(listingId));
+    if (idx === -1) return false;
+    this.data.listings.splice(idx, 1);
+    this.save();
+    return true;
   }
 
   adminUpdateOfferStatus(offerId, status, adminNote) {
