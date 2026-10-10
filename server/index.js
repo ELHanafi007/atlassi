@@ -101,6 +101,23 @@ app.use('/api/auth/register', authLimiter);
 // Payload size limit — 50mb to accommodate base64 previews
 app.use(express.json({ limit: '50mb' }));
 
+const VALID_PROPERTY_TYPES = new Set([
+  'APARTMENT', 'HOUSE', 'VILLA', 'STUDIO', 'LAND', 'OFFICE', 'COMMERCIAL', 'RIAD', 'OTHER'
+]);
+
+const normalizePropertyType = (raw) => {
+  const normalized = String(raw || 'APARTMENT').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  const aliases = {
+    DUPLEX: 'APARTMENT',
+    PENTHOUSE: 'APARTMENT',
+    TERRAIN: 'LAND',
+    LOCAL: 'COMMERCIAL',
+    SHOP: 'COMMERCIAL'
+  };
+  const mapped = aliases[normalized] || normalized;
+  return VALID_PROPERTY_TYPES.has(mapped) ? mapped : 'OTHER';
+};
+
 // Helpers
 const publicUser = (user) => ({
   id: user.id,
@@ -450,7 +467,7 @@ app.post('/api/listings', requireAuth, async (req, res, next) => {
     const price = body.price;
     const rawPurpose = body.purpose || body.status;
     const purpose = (rawPurpose === 'for_rent' || rawPurpose === 'RENT') ? 'RENT' : 'SALE';
-    const type = (body.type || 'APARTMENT').toUpperCase();
+    const type = normalizePropertyType(body.type);
     const city = body.city || body.location || 'Marrakech';
     const location = body.location || body.neighborhood || city;
     const neighborhood = body.neighborhood || null;

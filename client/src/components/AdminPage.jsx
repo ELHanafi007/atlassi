@@ -1175,7 +1175,7 @@ function NewListingTab({ token }) {
               <option value="apartment">Appartement</option>
               <option value="villa">Villa</option>
               <option value="riad">Riad</option>
-              <option value="duplex">Duplex / Penthouse</option>
+              <option value="other">Duplex / Penthouse</option>
               <option value="land">Terrain</option>
               <option value="commercial">Local Commercial</option>
             </select>
