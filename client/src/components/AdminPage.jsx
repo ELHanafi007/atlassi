@@ -992,9 +992,16 @@ function NewListingTab({ token }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  const isImageFile = (file) =>
+    (file.type || '').startsWith('image/') ||
+    /\.(jpe?g|png|webp|heic|heif|avif|bmp)$/i.test(file.name || '');
+
   const processImageFile = (file) =>
     new Promise((resolve) => {
-      if (!file.type.startsWith('image/') || file.type === 'image/gif') {
+      if (file.type === 'image/gif' || file.type === 'image/svg+xml') {
+        return resolve(file);
+      }
+      if (!isImageFile(file)) {
         return resolve(file);
       }
       const objectUrl = URL.createObjectURL(file);
@@ -1024,7 +1031,7 @@ function NewListingTab({ token }) {
       };
       img.onerror = () => {
         URL.revokeObjectURL(objectUrl);
-        resolve(file);
+        resolve(null);
       };
       img.src = objectUrl;
     });
@@ -1036,19 +1043,12 @@ function NewListingTab({ token }) {
     setUploadProgress('Préparation des photos...');
     try {
       const processed = await Promise.all(files.map(processImageFile));
-      const usable = [];
-      let skipped = 0;
-      processed.forEach((file) => {
-        if (/image\/hei[cf]/i.test(file.type)) {
-          skipped += 1;
-        } else {
-          usable.push(file);
-        }
-      });
+      const usable = processed.filter(Boolean);
+      const skipped = processed.length - usable.length;
       if (usable.length) setImages((prev) => [...prev, ...usable]);
       if (skipped) {
         setError(
-          `${skipped} photo(s) au format HEIC n’ont pas pu être converties. Convertissez-les en JPEG puis réessayez.`
+          `${skipped} photo(s) n’ont pas pu être traitées (format non pris en charge par ce navigateur, ex. HEIC). Convertissez-les en JPEG puis réessayez.`
         );
       }
     } finally {
