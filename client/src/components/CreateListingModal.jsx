@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Plus, Trash2, ArrowUpRight, AlertCircle, Check, CheckCircle2 } from 'lucide-react';
+import { X, Upload, Trash2, ArrowUpRight, AlertCircle, Check, CheckCircle2 } from 'lucide-react';
 import { listingsApi } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
 export function CreateListingModal({ onClose, currentUser, onListingCreated, onShowToast, onOpenAuth }) {
   const { t, translateCity, translateType, translateCondition, translateAmenity, isRtl } = useLanguage();
@@ -21,15 +23,14 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
     furnished: false,
     description: '',
     amenities: ['Terrace', 'Private parking'],
-    images: [
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=85&w=1200'
-    ],
     instagramVideoUrl: '',
     titleStatus: 'titled'
   });
 
-  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
@@ -40,13 +41,6 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
     'Private pool', 'Terrace', 'Sea view', 'Historic zellige', 
     'Central patio', 'Atlas views', 'Private parking', 'Fireplace', 
     'Elevator', 'Air conditioning', 'Furnished', 'Hammam potential'
-  ];
-
-  const presetPhotos = [
-    'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&q=85&w=1200',
-    'https://images.unsplash.com/photo-1548013146-72479768bbaa?auto=format&fit=crop&q=85&w=1200',
-    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=85&w=1200',
-    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=85&w=1200'
   ];
 
   const toggleAmenity = (item) => {
@@ -61,22 +55,95 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
     });
   };
 
-  const addImage = (url) => {
-    const targetUrl = url || imageUrlInput.trim();
-    if (!targetUrl) return;
-    if (formData.images.includes(targetUrl)) return;
-    setFormData((prev) => ({
-      ...prev,
-      images: [...prev.images, targetUrl]
-    }));
-    setImageUrlInput('');
+  const isImageFile = (file) =>
+    (file.type || '').startsWith('image/') ||
+    /\.(jpe?g|png|webp|heic|heif|avif|bmp)$/i.test(file.name || '');
+
+  const processImageFile = (file) =>
+    new Promise((resolve) => {
+      if (file.type === 'image/gif' || file.type === 'image/svg+xml') {
+        return resolve(file);
+      }
+      if (!isImageFile(file)) {
+        return resolve(file);
+      }
+      const objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const maxDim = 1600;
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const scale = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return resolve(file);
+            const name = `${(file.name || 'photo').replace(/\.[^.]+$/, '')}.jpg`;
+            resolve(new File([blob], name, { type: 'image/jpeg' }));
+          },
+          'image/jpeg',
+          0.82
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(null);
+      };
+      img.src = objectUrl;
+    });
+
+  const handleImageChange = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setError('');
+    setUploadProgress(isRtl ? 'جارٍ تحضير الصور...' : 'Préparation des photos...');
+    try {
+      const processed = await Promise.all(files.map(processImageFile));
+      const usable = processed.filter(Boolean);
+      const skipped = processed.length - usable.length;
+      if (usable.length) setImages((prev) => [...prev, ...usable]);
+      if (skipped) {
+        setError(
+          isRtl
+            ? `${skipped} صورة تعذّر معالجتها (صيغة غير مدعومة، مثل HEIC). حوّلها إلى JPEG ثم أعد المحاولة.`
+            : `${skipped} photo(s) n’ont pas pu être traitées (format non pris en charge, ex. HEIC). Convertissez-les en JPEG puis réessayez.`
+        );
+      }
+    } finally {
+      setUploadProgress('');
+    }
+    e.target.value = '';
   };
 
   const removeImage = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, idx) => idx !== index)
-    }));
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFile = async (file) => {
+    const token = localStorage.getItem('atlassi-token');
+    const data = new FormData();
+    data.append('file', file);
+
+    const res = await fetch(`${API_BASE}/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: data
+    });
+
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.error || (isRtl ? 'فشل تحميل الصورة.' : 'Erreur lors du téléversement de la photo.'));
+    }
+
+    const json = await res.json();
+    return json.url;
   };
 
   const handleSubmit = async (e) => {
@@ -91,12 +158,31 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
       return;
     }
 
+    if (images.length === 0) {
+      setError(isRtl ? 'يرجى إضافة صورة واحدة على الأقل.' : 'Veuillez ajouter au moins une photo du bien.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
+      const imageUrls = [];
+      for (let i = 0; i < images.length; i++) {
+        setUploading(true);
+        setUploadProgress(
+          isRtl
+            ? `جارٍ تحميل الصورة ${i + 1}/${images.length}...`
+            : `Téléversement photo ${i + 1}/${images.length}...`
+        );
+        const url = await uploadFile(images[i]);
+        imageUrls.push(url);
+      }
+      setUploadProgress(isRtl ? 'جارٍ نشر العقار...' : 'Publication de l’annonce...');
+
       const payload = {
         ...formData,
+        images: imageUrls,
         price: Number(formData.price),
         bedrooms: formData.bedrooms ? Number(formData.bedrooms) : null,
         bathrooms: formData.bathrooms ? Number(formData.bathrooms) : null,
@@ -117,6 +203,8 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
       setError(err.message || (isRtl ? 'فشل نشر العقار.' : 'Échec de la publication de la propriété.'));
     } finally {
       setLoading(false);
+      setUploading(false);
+      setUploadProgress('');
     }
   };
 
@@ -394,57 +482,53 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
             {/* Photos Section */}
             <div>
               <label className="block font-semibold text-stone-700 mb-1.5">
-                {t('createListing.photosLabel', formData.images.length)}
+                {t('createListing.photosLabel', images.length)}
               </label>
 
-              {/* Thumbnails */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                {formData.images.map((url, idx) => (
-                  <div key={idx} className="relative flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden border border-stone-300 group">
-                    <img src={url} alt="listing" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(idx)}
-                      className="absolute inset-0 bg-stone-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-[#1b2622] hover:bg-[#2c3a35] text-white text-xs font-semibold rounded-xl transition-all shadow-xs">
+                  <Upload className="w-4 h-4" />
+                  <span>{isRtl ? 'اختيار الصور' : 'Choisir des photos'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+                <span className="text-xs text-stone-500">
+                  {images.length > 0
+                    ? (isRtl ? `${images.length} صورة محددة` : `${images.length} photo(s) sélectionnée(s)`)
+                    : (isRtl ? 'لم يتم اختيار أي صورة' : 'Aucune photo choisie')}
+                </span>
               </div>
 
-              {/* Add image input */}
-              <div className="flex gap-2 mt-1">
-                <input
-                  type="url"
-                  value={imageUrlInput}
-                  onChange={(e) => setImageUrlInput(e.target.value)}
-                  placeholder={t('createListing.photoUrlPlaceholder')}
-                  className="flex-1 bg-white border border-[#ded7cb] rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#bd6b46]"
-                />
-                <button
-                  type="button"
-                  onClick={() => addImage()}
-                  className="px-3 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-xl font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" /> {t('createListing.addPhotoBtn')}
-                </button>
-              </div>
+              {uploadProgress && (
+                <p className="mt-2 text-[11px] text-[#bd6b46] font-medium">{uploadProgress}</p>
+              )}
 
-              {/* Presets */}
-              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-stone-500 flex-wrap">
-                <span>{t('createListing.samplePhotosPrompt')}</span>
-                {presetPhotos.map((url, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => addImage(url)}
-                    className="px-2 py-0.5 bg-stone-100 hover:bg-stone-200 border border-stone-300 rounded text-[10px] text-stone-700 font-mono cursor-pointer"
-                  >
-                    {t('createListing.photoSample', i + 1)}
-                  </button>
-                ))}
-              </div>
+              {/* Selected Images Preview */}
+              {images.length > 0 && (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
+                  {images.map((img, idx) => (
+                    <div key={idx} className="relative group rounded-xl overflow-hidden border border-[#ded7cb] aspect-square bg-stone-100">
+                      <img
+                        src={URL.createObjectURL(img)}
+                        alt={`Aperçu ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-rose-600 text-white rounded-full transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Instagram Reel Video Tour (Admin Only) */}
@@ -473,10 +557,10 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || uploading}
               className="mt-4 w-full py-3.5 rounded-xl bg-[#1b2622] hover:bg-[#2a3832] text-white text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 active:scale-[0.99] cursor-pointer"
             >
-              <span>{loading ? t('createListing.publishingBtn') : t('createListing.submitBtn')}</span>
+              <span>{loading || uploading ? t('createListing.publishingBtn') : t('createListing.submitBtn')}</span>
               <ArrowUpRight className={`w-4 h-4 text-[#bd6b46] ${isRtl ? 'rotate-[-90deg]' : ''}`} />
             </button>
 
