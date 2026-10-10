@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../lib/i18n';
 import { LanguageToggle } from './LanguageToggle';
+import { resolveMediaUrl } from '../lib/mediaUrl';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const API = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
@@ -203,7 +204,7 @@ const Thumb = ({ images, size = 64 }) => {
       className="rounded-xl flex-shrink-0 bg-[#f0ede6] overflow-hidden border border-[#e5e0d8] relative shadow-2xs"
     >
       {url ? (
-        <img src={url} alt="" className="w-full h-full object-cover" />
+        <img src={resolveMediaUrl(url)} alt="" className="w-full h-full object-cover" />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-[#7d8882]">
           <Building2 className="w-6 h-6 stroke-1" />
@@ -991,10 +992,67 @@ function NewListingTab({ token }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const handleImageChange = (e) => {
+  const processImageFile = (file) =>
+    new Promise((resolve) => {
+      if (!file.type.startsWith('image/') || file.type === 'image/gif') {
+        return resolve(file);
+      }
+      const objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const maxDim = 1600;
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const scale = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return resolve(file);
+            const name = `${(file.name || 'photo').replace(/\.[^.]+$/, '')}.jpg`;
+            resolve(new File([blob], name, { type: 'image/jpeg' }));
+          },
+          'image/jpeg',
+          0.82
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(file);
+      };
+      img.src = objectUrl;
+    });
+
+  const handleImageChange = async (e) => {
     const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      setImages((prev) => [...prev, ...files]);
+    if (files.length === 0) return;
+    setError('');
+    setUploadProgress('Préparation des photos...');
+    try {
+      const processed = await Promise.all(files.map(processImageFile));
+      const usable = [];
+      let skipped = 0;
+      processed.forEach((file) => {
+        if (/image\/hei[cf]/i.test(file.type)) {
+          skipped += 1;
+        } else {
+          usable.push(file);
+        }
+      });
+      if (usable.length) setImages((prev) => [...prev, ...usable]);
+      if (skipped) {
+        setError(
+          `${skipped} photo(s) au format HEIC n’ont pas pu être converties. Convertissez-les en JPEG puis réessayez.`
+        );
+      }
+    } finally {
+      setUploadProgress('');
     }
   };
 

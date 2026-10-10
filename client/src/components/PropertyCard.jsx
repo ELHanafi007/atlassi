@@ -1,6 +1,7 @@
 import { BedDouble, Bath, Maximize2, Heart, ArrowUpRight, MapPin, Camera } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../lib/i18n';
+import { resolveMediaUrl } from '../lib/mediaUrl';
 
 export function PropertyCard({ property, onOpen, isSaved, onToggleSave }) {
   const { t, localizeListing, translateTitleStatus, isRtl } = useLanguage();
@@ -25,7 +26,7 @@ export function PropertyCard({ property, onOpen, isSaved, onToggleSave }) {
       {/* Photo Frame */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-100">
         <img
-          src={primaryImage.url}
+          src={resolveMediaUrl(primaryImage.url)}
           alt={localized.title}
           loading="lazy"
           className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"

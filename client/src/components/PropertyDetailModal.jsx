@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { inquiriesApi } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { resolveMediaUrl } from '../lib/mediaUrl';
 
 const WhatsAppIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -98,8 +99,12 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
             <AnimatePresence mode="wait">
               {(() => {
                 const active = images[activeImageIndex] || {};
-                const url = active.url || '';
-                const isVideo = active.mediaType === 'video' || url.endsWith('.mp4') || url.endsWith('.webm') || url.includes('/video/');
+                const url = resolveMediaUrl(active.url || '');
+                const isVideo = active.mediaType === 'video'
+                  || url.startsWith('data:video/')
+                  || url.endsWith('.mp4')
+                  || url.endsWith('.webm')
+                  || url.includes('/video/');
                 return isVideo ? (
                   <motion.video
                     key={activeImageIndex}
@@ -176,7 +181,7 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
                     activeImageIndex === idx ? 'border-[#bd6b46] scale-105 shadow-xs' : 'border-transparent opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={img.url} alt="thumbnail" className="w-full h-full object-cover" />
+                  <img src={resolveMediaUrl(img.url)} alt="thumbnail" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

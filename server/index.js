@@ -1246,17 +1246,11 @@ app.get('/api/admin/users', requireAdmin, async (_req, res, next) => {
   // Serve uploaded files statically
   app.use('/uploads', express.static(uploadsDir));
 
-  const diskStorage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, uploadsDir),
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname).toLowerCase();
-      cb(null, `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`);
-    }
-  });
-
   const upload = multer({
-    storage: diskStorage,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB per file
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: isServerless ? 8 * 1024 * 1024 : 50 * 1024 * 1024
+    },
     fileFilter: (_req, file, cb) => {
       const allowed = /^(image|video)\//;
       if (allowed.test(file.mimetype)) return cb(null, true);
@@ -1264,8 +1258,41 @@ app.get('/api/admin/users', requireAdmin, async (_req, res, next) => {
     }
   });
 
+  const persistUploadedFile = async (file) => {
+    if (!file?.buffer?.length) return '';
+
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const filename = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
+
+    // Preferred: Vercel Blob (persistent, CDN-served, works across all instances).
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const { put } = await import('@vercel/blob');
+      const blob = await put(filename, file.buffer, {
+        access: 'public',
+        contentType: file.mimetype,
+        token: process.env.BLOB_READ_WRITE_TOKEN
+      });
+      return blob.url;
+    }
+
+    // No object storage configured (e.g. Vercel without Blob, or a local server
+    // sharing the same database as production). Embed the bytes directly so the
+    // image works no matter which host reads the record — serverless disk is
+    // ephemeral, so a /uploads path would 404 on the deployed site.
+    const isVideo = (file.mimetype || '').startsWith('video/');
+    const limit = (isVideo ? 7 : 6) * 1024 * 1024;
+    if (file.size > limit) {
+      throw new Error(
+        isVideo
+          ? 'Vidéo trop volumineuse. Utilisez une vidéo plus courte ou activez le stockage Vercel Blob.'
+          : 'Photo trop volumineuse. Réduisez la taille de l’image ou activez le stockage Vercel Blob.'
+      );
+    }
+    return `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+  };
+
   app.post('/api/upload', requireAuth, (req, res, next) => {
-    upload.any()(req, res, (err) => {
+    upload.any()(req, res, async (err) => {
       if (err) {
         console.error('Upload Error:', err);
         return res.status(400).json({ error: err.message || 'Error uploading file' });
@@ -1273,21 +1300,18 @@ app.get('/api/admin/users', requireAdmin, async (_req, res, next) => {
       if (!req.files || req.files.length === 0) {
         return res.status(400).json({ error: 'No files uploaded' });
       }
-      const relativeUrls = req.files.map(f => {
-        if (f.filename) {
-          return `/uploads/${f.filename}`;
-        }
-        if (f.buffer) {
-          return `data:${f.mimetype};base64,${f.buffer.toString('base64')}`;
-        }
-        return '';
-      }).filter(Boolean);
+      try {
+        const relativeUrls = (await Promise.all(req.files.map((f) => persistUploadedFile(f)))).filter(Boolean);
 
-      return res.json({
-        url: relativeUrls[0],
-        urls: relativeUrls,
-        data: relativeUrls.map(u => ({ url: u }))
-      });
+        return res.json({
+          url: relativeUrls[0],
+          urls: relativeUrls,
+          data: relativeUrls.map((u) => ({ url: u }))
+        });
+      } catch (uploadErr) {
+        console.error('Upload persist error:', uploadErr);
+        return res.status(400).json({ error: uploadErr.message || 'Error saving uploaded file' });
+      }
     });
   });
 })();
