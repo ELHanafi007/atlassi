@@ -1,15 +1,16 @@
 import { BedDouble, Bath, Maximize2, Heart, ArrowUpRight, MapPin, Camera } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../lib/i18n';
-import { resolveMediaUrl } from '../lib/mediaUrl';
+import { resolveMediaUrl, isImageMedia } from '../lib/mediaUrl';
 
 export function PropertyCard({ property, onOpen, isSaved, onToggleSave }) {
   const { t, localizeListing, translateTitleStatus, isRtl } = useLanguage();
   const localized = localizeListing(property);
 
-  const primaryImage = property.images?.find((img) => img.isPrimary) || property.images?.[0] || {
-    url: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=85&w=1200'
-  };
+  const primaryImage = property.images?.find((img) => img.isPrimary && isImageMedia(img.url))
+    || property.images?.find((img) => isImageMedia(img.url))
+    || property.images?.[0]
+    || { url: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=85&w=1200' };
 
   const imageCount = property.images?.length || 1;
 

@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Heart, BedDouble, Bath, Maximize2, MapPin, 
   Sparkles, ChevronLeft, ChevronRight, Check, Send, 
-  ShieldCheck, Phone
+  ShieldCheck, Phone, Play
 } from 'lucide-react';
 import { inquiriesApi } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
-import { resolveMediaUrl } from '../lib/mediaUrl';
+import { resolveMediaUrl, isExternalVideoUrl, isInlineVideoUrl, videoProviderTheme } from '../lib/mediaUrl';
 
 const WhatsAppIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -99,27 +99,66 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
             <AnimatePresence mode="wait">
               {(() => {
                 const active = images[activeImageIndex] || {};
-                const url = resolveMediaUrl(active.url || '');
-                const isVideo = active.mediaType === 'video'
-                  || url.startsWith('data:video/')
-                  || url.endsWith('.mp4')
-                  || url.endsWith('.webm')
-                  || url.includes('/video/');
-                return isVideo ? (
-                  <motion.video
-                    key={activeImageIndex}
-                    src={url}
-                    muted
-                    loop
-                    autoPlay
-                    playsInline
-                    initial={{ opacity: 0.4 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0.4 }}
-                    transition={{ duration: 0.2 }}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
+                const rawUrl = active.url || '';
+                const url = resolveMediaUrl(rawUrl);
+
+                // Video hosted on an external platform (Instagram / TikTok / YouTube):
+                // render a video-looking tile; clicking opens the platform.
+                if (isExternalVideoUrl(rawUrl)) {
+                  const theme = videoProviderTheme(rawUrl);
+                  return (
+                    <motion.a
+                      key={activeImageIndex}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      initial={{ opacity: 0.4 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0.4 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute inset-0 group/video flex items-center justify-center cursor-pointer"
+                      aria-label={`${t('modal.videoTourTitle')} — ${theme.label}`}
+                    >
+                      <div className={`absolute inset-0 bg-gradient-to-br ${theme.gradient}`} />
+                      <div className="relative z-10 flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/95 flex items-center justify-center shadow-lg group-hover/video:scale-110 transition-transform duration-200">
+                          <Play className="w-8 h-8 sm:w-9 sm:h-9 text-[#1b2622] translate-x-0.5 fill-[#1b2622]" />
+                        </div>
+                        <span className="text-white text-xs sm:text-sm font-bold tracking-wide drop-shadow-md">
+                          {isRtl ? 'شاهد على' : 'Regarder sur'} {theme.label}
+                        </span>
+                      </div>
+                      <div
+                        className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full bg-white/90 text-[10px] font-bold tracking-wider"
+                        style={{ color: theme.accent }}
+                      >
+                        {theme.badge}
+                      </div>
+                    </motion.a>
+                  );
+                }
+
+                // Self-hosted video file (data URL or /uploads path)
+                if (isInlineVideoUrl(rawUrl)) {
+                  return (
+                    <motion.video
+                      key={activeImageIndex}
+                      src={url}
+                      controls
+                      muted
+                      loop
+                      autoPlay
+                      playsInline
+                      initial={{ opacity: 0.4 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0.4 }}
+                      transition={{ duration: 0.2 }}
+                      className="w-full h-full object-contain bg-black"
+                    />
+                  );
+                }
+
+                return (
                   <motion.img
                     key={activeImageIndex}
                     src={url}
@@ -181,7 +220,23 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
                     activeImageIndex === idx ? 'border-[#bd6b46] scale-105 shadow-xs' : 'border-transparent opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={resolveMediaUrl(img.url)} alt="thumbnail" className="w-full h-full object-cover" />
+                  {isExternalVideoUrl(img.url) ? (
+                    <>
+                      <div className={`absolute inset-0 bg-gradient-to-br ${videoProviderTheme(img.url).gradient}`} />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Play className="w-4 h-4 text-white fill-white drop-shadow" />
+                      </div>
+                    </>
+                  ) : isInlineVideoUrl(img.url) ? (
+                    <>
+                      <video src={resolveMediaUrl(img.url)} muted className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <Play className="w-4 h-4 text-white fill-white drop-shadow" />
+                      </div>
+                    </>
+                  ) : (
+                    <img src={resolveMediaUrl(img.url)} alt="thumbnail" className="w-full h-full object-cover" />
+                  )}
                 </button>
               ))}
             </div>

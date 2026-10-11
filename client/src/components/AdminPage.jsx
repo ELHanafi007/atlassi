@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../lib/i18n';
 import { LanguageToggle } from './LanguageToggle';
-import { resolveMediaUrl } from '../lib/mediaUrl';
+import { resolveMediaUrl, isImageMedia } from '../lib/mediaUrl';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const API = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
@@ -197,7 +197,7 @@ const Btn = ({ children, onClick, danger, small, disabled, icon: Icon }) => (
 
 /* ─── Image Thumbnail ──────────────────────────────────────── */
 const Thumb = ({ images, size = 64 }) => {
-  const url = images?.[0]?.url;
+  const url = images?.find((img) => isImageMedia(img.url))?.url;
   return (
     <div
       style={{ width: size, height: size }}
@@ -983,6 +983,8 @@ function NewListingTab({ token }) {
     titleStatus: 'titled',
     description: '',
     features: '',
+    instagramVideoUrl: '',
+    tiktokVideoUrl: '',
   });
 
   const [images, setImages] = useState([]);
@@ -1062,9 +1064,14 @@ function NewListingTab({ token }) {
 
   const handleVideoChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setVideo(file);
+    if (!file) return;
+    if (file.size > 2.5 * 1024 * 1024) {
+      setError('Vidéo trop volumineuse pour l’envoi direct (max ~2,5 Mo). Collez plutôt un lien Instagram ou TikTok ci-dessous.');
+      e.target.value = '';
+      return;
     }
+    setError('');
+    setVideo(file);
   };
 
   const uploadFile = async (file) => {
@@ -1109,12 +1116,24 @@ function NewListingTab({ token }) {
         imageUrls.push(url);
       }
 
-      // Upload video if present
-      let videoUrl = '';
+      // Gallery media: photos first, then the optional self-hosted video and
+      // the external Instagram/TikTok links (both render as videos in the gallery).
+      const mediaUrls = [...imageUrls];
       if (video) {
         setUploadProgress('Téléversement de la vidéo...');
-        videoUrl = await uploadFile(video);
+        let videoUrl;
+        try {
+          videoUrl = await uploadFile(video);
+        } catch (videoErr) {
+          throw new Error('La vidéo n’a pas pu être envoyée (fichier trop lourd). Utilisez plutôt un lien Instagram ou TikTok.');
+        }
+        if (videoUrl) mediaUrls.push(videoUrl);
       }
+
+      const instagramUrl = (formData.instagramVideoUrl || '').trim();
+      const tiktokUrl = (formData.tiktokVideoUrl || '').trim();
+      if (instagramUrl) mediaUrls.push(instagramUrl);
+      if (tiktokUrl) mediaUrls.push(tiktokUrl);
 
       setUploadProgress('Publication de l’annonce...');
 
@@ -1133,8 +1152,7 @@ function NewListingTab({ token }) {
         features: formData.features
           ? formData.features.split(',').map((f) => f.trim()).filter(Boolean)
           : [],
-        images: imageUrls,
-        video: videoUrl || undefined,
+        images: mediaUrls,
       };
 
       const res = await fetch(`${API}/listings`, {
@@ -1165,6 +1183,8 @@ function NewListingTab({ token }) {
         titleStatus: 'titled',
         description: '',
         features: '',
+        instagramVideoUrl: '',
+        tiktokVideoUrl: '',
       });
       setImages([]);
       setVideo(null);
@@ -1434,10 +1454,43 @@ function NewListingTab({ token }) {
                 </div>
               )}
             </div>
+            <p className="text-[11px] text-[#7d8882] mt-2 leading-relaxed">
+              Envoi direct limité à ~2,5 Mo (contrainte d’hébergement). Pour une vidéo plus longue, collez un lien Instagram ou TikTok ci-dessous — il s’affichera comme une vidéo dans la galerie.
+            </p>
+          </div>
+
+          {/* External video links (shown as video tiles in the gallery) */}
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-[#19221f] mb-1.5 flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045]" />
+                Lien vidéo Instagram (optionnel)
+              </label>
+              <input
+                type="url"
+                inputMode="url"
+                placeholder="https://www.instagram.com/reel/..."
+                value={formData.instagramVideoUrl}
+                onChange={(e) => setFormData({ ...formData, instagramVideoUrl: e.target.value })}
+                className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#19221f] mb-1.5 flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-gradient-to-br from-[#25F4EE] via-black to-[#FE2C55]" />
+                Lien vidéo TikTok (optionnel)
+              </label>
+              <input
+                type="url"
+                inputMode="url"
+                placeholder="https://www.tiktok.com/@.../video/..."
+                value={formData.tiktokVideoUrl}
+                onChange={(e) => setFormData({ ...formData, tiktokVideoUrl: e.target.value })}
+                className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+              />
+            </div>
           </div>
         </div>
-
-        {/* Description & Features */}
         <div className="space-y-4 pt-4 border-t border-[#e5e0d8]">
           <div>
             <label className="block text-xs font-semibold text-[#19221f] mb-1.5">
