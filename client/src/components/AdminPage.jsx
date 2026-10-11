@@ -1560,7 +1560,14 @@ function Dashboard({ token, admin, onLogout }) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Top Summary Stat Cards */}
         {stats && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mb-8">
+            <StatCard
+              label="À valider"
+              value={stats.pendingListings}
+              sub="Annonces clients en attente"
+              accentColor="bg-amber-50 text-amber-800"
+              icon={AlertCircle}
+            />
             <StatCard
               label="Annonces"
               value={stats.publishedListings}
@@ -1603,12 +1610,14 @@ function Dashboard({ token, admin, onLogout }) {
         <div className="bg-[#f0ede6] p-1.5 rounded-2xl flex gap-1 sm:gap-2 mb-8 overflow-x-auto border border-[#e5e0d8] custom-scrollbar">
           {TABS.map(t => {
             const Icon = t.icon;
+            const pending = t.id === 'listings' ? (stats?.pendingListings || 0) : 0;
             const count =
-              t.id === 'listings' ? stats?.totalListings :
+              t.id === 'listings' ? (pending > 0 ? pending : stats?.totalListings) :
               t.id === 'requests' ? stats?.totalRequests :
               t.id === 'offers' ? stats?.totalOffers :
               t.id === 'contacts' ? stats?.totalContacts :
               t.id === 'users' ? stats?.totalUsers : null;
+            const countHighlight = t.id === 'listings' && pending > 0;
 
             return (
               <button
@@ -1624,8 +1633,11 @@ function Dashboard({ token, admin, onLogout }) {
                 <span>{t.label}</span>
                 {count != null && (
                   <span
+                    title={countHighlight ? `${pending} annonce(s) en attente de validation` : undefined}
                     className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                      tab === t.id ? 'bg-[#bd6b46] text-white' : 'bg-[#e5e0d8] text-[#55605b]'
+                      countHighlight
+                        ? 'bg-amber-400 text-amber-950 ring-2 ring-amber-200 animate-pulse'
+                        : tab === t.id ? 'bg-[#bd6b46] text-white' : 'bg-[#e5e0d8] text-[#55605b]'
                     }`}
                   >
                     {count}

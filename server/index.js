@@ -973,7 +973,12 @@ app.get('/api/admin/listings', requireAdmin, async (_req, res, next) => {
         console.warn('Admin listings Prisma error, falling back to store:', dbErr.message);
       }
     }
-    const listings = store.getAllListingsAdmin();
+    const listings = store.getAllListingsAdmin().map(l => {
+      let displayStatus = l.status;
+      if (l.status === 'PAUSED') displayStatus = 'UNPUBLISHED';
+      if (l.status === 'DRAFT') displayStatus = 'PENDING';
+      return { ...l, status: displayStatus };
+    });
     return res.json({ data: listings });
   } catch (error) { return next(error); }
 });
