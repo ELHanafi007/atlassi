@@ -34,6 +34,8 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  const isRent = formData.purpose === 'RENT';
+
   const moroccanCities = ['Laayoune'];
   const moroccanTypes = ['Villa', 'Riad', 'Apartment', 'House', 'Studio', 'Land'];
   const availableConditions = ['New build', 'Excellent', 'Renovated', 'Restored heritage'];
@@ -417,10 +419,15 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
               </div>
             </div>
 
-            {/* Title Status (Statut Foncier) */}
-            <div>
-              <label className="block font-semibold text-stone-700 mb-1">
-                {t('createListing.titleStatusLabel')}
+            {/* Title Status (Statut Foncier) — only applicable to sale */}
+            <div className={`transition-opacity duration-300 ${isRent ? 'opacity-50' : 'opacity-100'}`}>
+              <label className="block font-semibold text-stone-700 mb-1 flex items-center gap-2">
+                <span>{t('createListing.titleStatusLabel')}</span>
+                {isRent && (
+                  <span className="text-[10px] font-medium text-stone-400 normal-case">
+                    {isRtl ? '(غير متاح للإيجار)' : '(non applicable en location)'}
+                  </span>
+                )}
               </label>
               <div className="flex gap-2 bg-[#ede8df] p-1 rounded-xl">
                 {[
@@ -430,9 +437,14 @@ export function CreateListingModal({ onClose, currentUser, onListingCreated, onS
                   <button
                     key={val}
                     type="button"
-                    onClick={() => setFormData({ ...formData, titleStatus: val })}
-                    className={`flex-1 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-                      formData.titleStatus === val ? 'bg-white text-[#1b2622] shadow-2xs' : 'text-stone-600 hover:text-stone-900'
+                    disabled={isRent}
+                    onClick={() => { if (!isRent) setFormData({ ...formData, titleStatus: val }); }}
+                    className={`flex-1 py-1.5 rounded-lg font-semibold transition-all duration-300 ${
+                      isRent
+                        ? 'cursor-not-allowed text-stone-400'
+                        : formData.titleStatus === val
+                          ? 'bg-white text-[#1b2622] shadow-2xs cursor-pointer'
+                          : 'text-stone-600 hover:text-stone-900 cursor-pointer'
                     }`}
                   >
                     {t(labelKey)}
