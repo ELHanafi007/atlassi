@@ -286,7 +286,7 @@ export function App() {
 
           {/* Loading Skeleton */}
           {loading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-8">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="bg-white rounded-2xl border border-[#ded7cb] p-3 animate-pulse">
                   <div className="aspect-[4/3] bg-stone-200 rounded-xl mb-4" />
@@ -349,7 +349,7 @@ export function App() {
           {!loading && !error && displayedListings.length > 0 && (
             <motion.div 
               layout
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
+className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-8"
             >
               <AnimatePresence>
                 {displayedListings.map((property) => (

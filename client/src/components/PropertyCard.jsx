@@ -72,15 +72,15 @@ export function PropertyCard({ property, onOpen, isSaved, onToggleSave }) {
       </div>
 
       {/* Content Section */}
-      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+      <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between">
         <div>
           {/* Eyebrow / Location */}
-          <div className="flex items-center justify-between text-xs text-[#6e7b74] mb-1.5">
-            <div className="flex items-center gap-1 font-medium">
-              <MapPin className="w-3.5 h-3.5 text-[#bd6b46]" />
-              <span>{property.neighborhood ? `${property.neighborhood}, ` : ''}{localized.displayCity}</span>
+          <div className="flex items-center justify-between gap-1 text-[10px] sm:text-xs text-[#6e7b74] mb-1.5">
+            <div className="flex items-center gap-1 font-medium min-w-0">
+              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#bd6b46] shrink-0" />
+              <span className="truncate">{property.neighborhood ? `${property.neighborhood}, ` : ''}{localized.displayCity}</span>
             </div>
-            <span className="text-[10px] tracking-wider font-semibold text-stone-400">
+            <span className="text-[9px] sm:text-[10px] tracking-wider font-semibold text-stone-400 shrink-0">
               {localized.displayType}
             </span>
           </div>
@@ -88,7 +88,7 @@ export function PropertyCard({ property, onOpen, isSaved, onToggleSave }) {
           {/* Title Status Badge */}
           {property.titleStatus && (
             <div className="mb-1.5">
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide ${
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-semibold tracking-wide ${
                 property.titleStatus === 'titled'
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                   : 'bg-amber-50 text-amber-700 border border-amber-200'
@@ -100,52 +100,52 @@ export function PropertyCard({ property, onOpen, isSaved, onToggleSave }) {
           )}
 
           {/* Title */}
-          <h3 className="text-base font-bold text-[#1b2622] group-hover:text-[#bd6b46] transition-colors leading-snug tracking-tight line-clamp-1">
+          <h3 className="text-sm sm:text-base font-bold text-[#1b2622] group-hover:text-[#bd6b46] transition-colors leading-snug tracking-tight line-clamp-1">
             {localized.title}
           </h3>
 
           {/* Description Snippet */}
-          <p className="mt-1.5 text-xs text-[#5c6863] line-clamp-2 leading-relaxed font-normal">
+          <p className="mt-1 text-[11px] sm:text-xs text-[#5c6863] line-clamp-2 leading-relaxed font-normal">
             {localized.description}
           </p>
         </div>
 
         {/* Stats & Pricing */}
-        <div className="mt-4 pt-3 border-t border-[#ede7dd]">
-          <div className="flex items-center justify-between text-xs text-[#525f59] mb-3 font-medium">
+        <div className="mt-3 pt-3 border-t border-[#ede7dd]">
+          <div className="flex items-center justify-between gap-2 flex-wrap text-[10px] sm:text-xs text-[#525f59] mb-2.5 font-medium">
             {property.bedrooms !== null && (
-              <span className="flex items-center gap-1.5">
-                <BedDouble className="w-3.5 h-3.5 text-stone-400" />
+              <span className="flex items-center gap-1">
+                <BedDouble className="w-3 h-3 text-stone-400" />
                 <span>{t('card.bedCount', property.bedrooms)}</span>
               </span>
             )}
             {property.bathrooms !== null && (
-              <span className="flex items-center gap-1.5">
-                <Bath className="w-3.5 h-3.5 text-stone-400" />
+              <span className="flex items-center gap-1">
+                <Bath className="w-3 h-3 text-stone-400" />
                 <span>{t('card.bathCount', property.bathrooms)}</span>
               </span>
             )}
             {property.surface !== null && (
-              <span className="flex items-center gap-1.5">
-                <Maximize2 className="w-3.5 h-3.5 text-stone-400" />
+              <span className="flex items-center gap-1">
+                <Maximize2 className="w-3 h-3 text-stone-400" />
                 <span>{property.surface} {t('card.surfaceUnit')}</span>
               </span>
             )}
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[10px] tracking-wider font-semibold text-stone-400 block -mb-0.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <span className="text-[9px] sm:text-[10px] tracking-wider font-semibold text-stone-400 block -mb-0.5 whitespace-nowrap">
                 {t('card.priceLabel')}
               </span>
-              <strong className="text-sm sm:text-base font-mono font-bold text-[#1b2622]">
+              <strong className="text-[13px] sm:text-base font-mono font-bold text-[#1b2622] truncate block">
                 {localized.displayPrice}
               </strong>
             </div>
 
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#bd6b46] group-hover:translate-x-0.5 transition-transform">
-              <span>{t('card.viewAction')}</span> 
-              <ArrowUpRight className={`w-3.5 h-3.5 ${isRtl ? 'rotate-[-90deg]' : ''}`} />
+            <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-[#bd6b46] group-hover:translate-x-0.5 transition-transform shrink-0">
+              <span className="hidden sm:inline">{t('card.viewAction')}</span> 
+              <ArrowUpRight className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isRtl ? 'rotate-[-90deg]' : ''}`} />
             </span>
           </div>
         </div>
