@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { inquiriesApi } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
-import { resolveMediaUrl, isExternalVideoUrl, isInlineVideoUrl, videoProviderTheme } from '../lib/mediaUrl';
+import { resolveMediaUrl, isExternalVideoUrl, isInlineVideoUrl, isEmbedHtml, getEmbedProvider, videoProviderTheme } from '../lib/mediaUrl';
+import { VideoEmbed } from './VideoEmbed';
 
 const WhatsAppIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -24,6 +25,8 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
     : [{ id: 1, url: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=85&w=1400', isPrimary: true }];
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const activeRawUrl = images[Math.min(activeImageIndex, images.length - 1)]?.url || '';
+  const isActiveEmbed = isEmbedHtml(activeRawUrl);
   const [inquiryMessage, setInquiryMessage] = useState('');
   const [inquirySending, setInquirySending] = useState(false);
   const [inquirySent, setInquirySent] = useState(false);
@@ -95,12 +98,30 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
         <div className="overflow-y-auto flex-1">
           
           {/* Gallery Carousel */}
-          <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-stone-900 overflow-hidden">
+          <div className={`relative w-full overflow-hidden ${isActiveEmbed ? 'h-[460px] sm:h-[560px] bg-stone-100' : 'aspect-[16/10] sm:aspect-[16/9] bg-stone-900'}`}>
             <AnimatePresence mode="wait">
               {(() => {
                 const active = images[activeImageIndex] || {};
                 const rawUrl = active.url || '';
                 const url = resolveMediaUrl(rawUrl);
+                const isEmbed = isEmbedHtml(rawUrl);
+
+                // Platform embed code (Instagram / TikTok blockquote)
+                if (isEmbed) {
+                  const provider = getEmbedProvider(rawUrl) || 'instagram';
+                  return (
+                    <motion.div
+                      key={activeImageIndex}
+                      className="w-full h-full"
+                      initial={{ opacity: 0.4 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0.4 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <VideoEmbed html={rawUrl} provider={provider} />
+                    </motion.div>
+                  );
+                }
 
                 // Video hosted on an external platform (Instagram / TikTok / YouTube):
                 // render a video-looking tile; clicking opens the platform.
@@ -220,7 +241,15 @@ export function PropertyDetailModal({ property, onClose, isSaved, onToggleSave, 
                     activeImageIndex === idx ? 'border-[#bd6b46] scale-105 shadow-xs' : 'border-transparent opacity-60 hover:opacity-100'
                   }`}
                 >
-                  {isExternalVideoUrl(img.url) ? (
+                  {isEmbedHtml(img.url) ? (
+                    <>
+                      <div className={`absolute inset-0 bg-gradient-to-br ${videoProviderTheme(img.url).gradient}`} />
+                      <div className="absolute inset-0 flex items-center justify-center flex-col gap-0.5">
+                        <Play className="w-4 h-4 text-white fill-white drop-shadow" />
+                        <span className="text-[8px] font-bold text-white drop-shadow uppercase tracking-wide">{videoProviderTheme(img.url).badge}</span>
+                      </div>
+                    </>
+                  ) : isExternalVideoUrl(img.url) ? (
                     <>
                       <div className={`absolute inset-0 bg-gradient-to-br ${videoProviderTheme(img.url).gradient}`} />
                       <div className="absolute inset-0 flex items-center justify-center">

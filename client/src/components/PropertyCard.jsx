@@ -9,7 +9,6 @@ export function PropertyCard({ property, onOpen, isSaved, onToggleSave }) {
 
   const primaryImage = property.images?.find((img) => img.isPrimary && isImageMedia(img.url))
     || property.images?.find((img) => isImageMedia(img.url))
-    || property.images?.[0]
     || { url: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=85&w=1200' };
 
   const imageCount = property.images?.length || 1;

@@ -1130,10 +1130,10 @@ function NewListingTab({ token }) {
         if (videoUrl) mediaUrls.push(videoUrl);
       }
 
-      const instagramUrl = (formData.instagramVideoUrl || '').trim();
-      const tiktokUrl = (formData.tiktokVideoUrl || '').trim();
-      if (instagramUrl) mediaUrls.push(instagramUrl);
-      if (tiktokUrl) mediaUrls.push(tiktokUrl);
+      const instagramEmbed = (formData.instagramVideoUrl || '').trim();
+      const tiktokEmbed = (formData.tiktokVideoUrl || '').trim();
+      if (instagramEmbed) mediaUrls.push(instagramEmbed);
+      if (tiktokEmbed) mediaUrls.push(tiktokEmbed);
 
       setUploadProgress('Publication de l’annonce...');
 
@@ -1455,39 +1455,43 @@ function NewListingTab({ token }) {
               )}
             </div>
             <p className="text-[11px] text-[#7d8882] mt-2 leading-relaxed">
-              Envoi direct limité à ~2,5 Mo (contrainte d’hébergement). Pour une vidéo plus longue, collez un lien Instagram ou TikTok ci-dessous — il s’affichera comme une vidéo dans la galerie.
+              Envoi direct limité à ~2,5 Mo (contrainte d’hébergement). Pour une vidéo plus longue, collez un code d’intégration Instagram ou TikTok ci-dessous — il s’affichera comme une vidéo dans la galerie.
             </p>
           </div>
 
-          {/* External video links (shown as video tiles in the gallery) */}
-          <div className="grid sm:grid-cols-2 gap-3">
+          {/* External video embeds (shown as playable previews in the gallery) */}
+          <div className="grid lg:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-[#19221f] mb-1.5 flex items-center gap-1.5">
                 <span className="w-4 h-4 rounded-full bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045]" />
-                Lien vidéo Instagram (optionnel)
+                Code intégration Instagram (optionnel)
               </label>
-              <input
-                type="url"
-                inputMode="url"
-                placeholder="https://www.instagram.com/reel/..."
+              <textarea
+                rows={3}
+                placeholder={'<blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/reel/..." ...></blockquote>'}
                 value={formData.instagramVideoUrl}
                 onChange={(e) => setFormData({ ...formData, instagramVideoUrl: e.target.value })}
-                className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+                className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-xs font-mono text-[#19221f] focus:outline-none focus:border-[#bd6b46]"
               />
+              <p className="text-[11px] text-[#7d8882] mt-1 leading-relaxed">
+                Copiez le code « Intégrer » d’Instagram (la balise &lt;blockquote&gt;) — il s’affichera en aperçu vidéo dans la galerie.
+              </p>
             </div>
             <div>
               <label className="block text-xs font-semibold text-[#19221f] mb-1.5 flex items-center gap-1.5">
                 <span className="w-4 h-4 rounded-full bg-gradient-to-br from-[#25F4EE] via-black to-[#FE2C55]" />
-                Lien vidéo TikTok (optionnel)
+                Code intégration TikTok (optionnel)
               </label>
-              <input
-                type="url"
-                inputMode="url"
-                placeholder="https://www.tiktok.com/@.../video/..."
+              <textarea
+                rows={3}
+                placeholder={'<blockquote class="tiktok-embed" cite="https://www.tiktok.com/..." ...></blockquote>'}
                 value={formData.tiktokVideoUrl}
                 onChange={(e) => setFormData({ ...formData, tiktokVideoUrl: e.target.value })}
-                className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-sm focus:outline-none focus:border-[#bd6b46]"
+                className="w-full px-4 py-2.5 bg-[#fcfaf7] border border-[#e7e2d8] rounded-xl text-xs font-mono text-[#19221f] focus:outline-none focus:border-[#bd6b46]"
               />
+              <p className="text-[11px] text-[#7d8882] mt-1 leading-relaxed">
+                Copiez le code « Intégrer » de TikTok (la balise &lt;blockquote&gt;) — il s’affichera en aperçu vidéo dans la galerie.
+              </p>
             </div>
           </div>
         </div>

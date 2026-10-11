@@ -20,19 +20,45 @@ export function resolveMediaUrl(url) {
 
 /**
  * Media stored in a listing can be an image, a self-hosted (inline) video file,
- * or a link to a video hosted on an external platform (Instagram, TikTok…).
- * These helpers classify a stored URL so the gallery/thumbnails render correctly.
+ * a link to a video hosted on an external platform (Instagram, TikTok…), or the
+ * raw <blockquote> embed code from Instagram/TikTok.
+ * These helpers classify a stored value so the gallery/thumbnails render correctly.
  */
-export function getVideoProvider(url) {
-  const u = String(url || '').toLowerCase();
+
+/** True when the value is platform embed HTML (Instagram / TikTok blockquote). */
+export function isEmbedHtml(value) {
+  const s = String(value || '');
+  const trimmed = s.trimStart();
+  return (
+    trimmed.startsWith('<blockquote') ||
+    s.includes('instagram-media') ||
+    s.includes('tiktok-embed') ||
+    s.includes('data-instgrm')
+  );
+}
+
+export function getEmbedProvider(value) {
+  const s = String(value || '').toLowerCase();
+  if (s.includes('tiktok-embed')) return 'tiktok';
+  if (s.includes('instagram-media') || s.includes('data-instgrm')) return 'instagram';
+  return null;
+}
+
+export function getVideoProvider(value) {
+  if (isEmbedHtml(value)) {
+    const p = getEmbedProvider(value);
+    return p || 'external';
+  }
+  const u = String(value || '').toLowerCase();
   if (u.includes('tiktok.com') || u.includes('vm.tiktok')) return 'tiktok';
   if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
   if (u.includes('instagram.com') || u.includes('instagr.am')) return 'instagram';
   return 'external';
 }
 
-export function isExternalVideoUrl(url) {
-  const u = String(url || '').toLowerCase();
+export function isExternalVideoUrl(value) {
+  if (isEmbedHtml(value)) return false;
+  const u = String(value || '').toLowerCase();
   return (
     u.includes('instagram.com') || u.includes('instagr.am') ||
     u.includes('tiktok.com') || u.includes('vm.tiktok') ||
@@ -40,8 +66,9 @@ export function isExternalVideoUrl(url) {
   );
 }
 
-export function isInlineVideoUrl(url) {
-  const u = String(url || '').toLowerCase();
+export function isInlineVideoUrl(value) {
+  if (isEmbedHtml(value)) return false;
+  const u = String(value || '').toLowerCase();
   return (
     u.startsWith('data:video/') ||
     u.endsWith('.mp4') || u.endsWith('.webm') ||
@@ -50,12 +77,12 @@ export function isInlineVideoUrl(url) {
   );
 }
 
-export function isVideoMedia(url) {
-  return isExternalVideoUrl(url) || isInlineVideoUrl(url);
+export function isVideoMedia(value) {
+  return isExternalVideoUrl(value) || isInlineVideoUrl(value);
 }
 
-export function isImageMedia(url) {
-  return !isVideoMedia(url);
+export function isImageMedia(value) {
+  return !isVideoMedia(value) && !isEmbedHtml(value);
 }
 
 /** Provider look-and-feel (gradient + label) used by the gallery/thumbnail tiles. */
