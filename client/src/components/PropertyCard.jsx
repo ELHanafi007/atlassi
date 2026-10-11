@@ -23,13 +23,13 @@ export function PropertyCard({ property, onOpen, isSaved, onToggleSave }) {
       onClick={() => onOpen(property)}
       className="group cursor-pointer bg-white rounded-2xl border border-[#e4ded5] hover:border-[#1b2622]/40 shadow-2xs hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden"
     >
-      {/* Photo Frame */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-100">
+      {/* Photo Frame — full image, original aspect ratio, no cropping */}
+      <div className="relative w-full overflow-hidden bg-stone-100">
         <img
           src={resolveMediaUrl(primaryImage.url)}
           alt={localized.title}
           loading="lazy"
-          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+          className="w-full h-auto block object-contain"
         />
 
         {/* Top Badges */}
